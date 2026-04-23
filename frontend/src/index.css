@@ -1,0 +1,24 @@
+/* Tailwind CSS directives — must be at the top */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   Global CSS custom properties
+   Brand colors are defined here so tenants can override them
+   via injected CSS in Phase 4+ (white-labeling)
+   ============================================================ */
+:root {
+  --color-brand-50:  #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-900: #1e3a8a;
+}
+
+/* RTL/LTR layout base — direction is set on <html> by i18n module */
+[dir='rtl'] body {
+  font-family: 'Inter', system-ui, sans-serif;
+}

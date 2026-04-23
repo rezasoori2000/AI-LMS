@@ -1,0 +1,43 @@
+{
+  "home": {
+    "title": "Welcome to AI-LMS",
+    "subtitle": "Your AI-powered educational platform."
+  },
+  "errors": {
+    "notFound": "Page not found",
+    "goHome": "Go to Home",
+    "generic": "Something went wrong. Please try again.",
+    "unauthorized": "You are not authorized to access this page.",
+    "forbidden": "Access denied."
+  },
+  "nav": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "lessons": "Lessons",
+    "progress": "Progress",
+    "settings": "Settings",
+    "logout": "Log out"
+  },
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "confirm": "Confirm",
+    "search": "Search",
+    "noResults": "No results found.",
+    "required": "This field is required."
+  },
+  "auth": {
+    "login": "Log in",
+    "register": "Register",
+    "email": "Email address",
+    "password": "Password",
+    "forgotPassword": "Forgot password?",
+    "logout": "Log out"
+  }
+}

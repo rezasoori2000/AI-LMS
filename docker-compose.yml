@@ -1,0 +1,38 @@
+# =============================================================
+# AI-LMS — docker-compose.yml
+# Base local development orchestration
+# Full service definitions will be added in Part 6
+# =============================================================
+
+services:
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../infra/docker/frontend.Dockerfile
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    env_file:
+      - .env
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ../infra/docker/backend.Dockerfile
+    ports:
+      - "${BACKEND_PORT:-5000}:5000"
+    env_file:
+      - .env
+    depends_on:
+      - ai-service
+
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: ../infra/docker/ai-service.Dockerfile
+    ports:
+      - "${AI_SERVICE_PORT:-8000}:8000"
+    env_file:
+      - .env

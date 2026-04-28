@@ -1,38 +1,100 @@
 # =============================================================
 # AI-LMS — docker-compose.yml
-# Base local development orchestration
-# Full service definitions will be added in Part 6
+#
+# Base service definitions used by ALL environments.
+# This file alone is not runnable — it defines the contract.
+# Local development merges docker-compose.override.yml on top.
+#
+# Usage (local):     docker compose up --build
+# Usage (CI/prod):   docker compose -f docker-compose.yml -f docker-compose.prod.yml up
+#
+# Port map (host → container):
+#   5173 → frontend  (Vite dev server in override / nginx in prod)
+#   5000 → backend   (ASP.NET Core)
+#   8000 → ai-service (FastAPI/uvicorn)
 # =============================================================
 
 services:
 
+  # ── Frontend ─────────────────────────────────────────────────────────────
   frontend:
     build:
-      context: ./frontend
-      dockerfile: ../infra/docker/frontend.Dockerfile
+      # Context is the repo root so both frontend/ source and infra/docker/nginx.conf
+      # are accessible to the Dockerfile in a single build context.
+      context: .
+      dockerfile: infra/docker/frontend.Dockerfile
+      # VITE_ build args are injected here so the bundle is built with
+      # the correct API URL.  Override in docker-compose.prod.yml for prod.
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
+    image: ai-lms-frontend:local
     ports:
-      - "${FRONTEND_PORT:-5173}:5173"
+      - "${FRONTEND_PORT:-5173}:80"
     env_file:
       - .env
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
 
+  # ── Backend ───────────────────────────────────────────────────────────────
   backend:
     build:
       context: ./backend
       dockerfile: ../infra/docker/backend.Dockerfile
+    image: ai-lms-backend:local
     ports:
       - "${BACKEND_PORT:-5000}:5000"
     env_file:
       - .env
+    environment:
+      # These are set here (not .env) so they can be overridden per environment
+      # without touching the shared .env file.
+      ASPNETCORE_URLS: "http://+:5000"
     depends_on:
-      - ai-service
+      ai-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    restart: unless-stopped
 
+  # ── AI Service ───────────────────────────────────────────────────────────
   ai-service:
     build:
       context: ./ai-service
       dockerfile: ../infra/docker/ai-service.Dockerfile
+    image: ai-lms-ai-service:local
     ports:
       - "${AI_SERVICE_PORT:-8000}:8000"
     env_file:
       - .env
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+    restart: unless-stopped
+
+# =============================================================
+# Named volumes (uncomment when database/vector store added)
+# =============================================================
+# volumes:
+#   postgres_data:        # Phase 3: PostgreSQL data
+#   redis_data:           # Phase 3: Redis cache / session store (if needed)
+#   qdrant_data:          # Phase 2+: vector store
+
+# =============================================================
+# Networks
+# Isolate services on a private bridge — only published ports
+# are reachable from the host.
+# =============================================================
+networks:
+  default:
+    name: ai-lms-network
+    driver: bridge

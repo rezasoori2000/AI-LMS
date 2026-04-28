@@ -1,0 +1,27 @@
+# Frontend .dockerignore
+# Excludes files that must NOT be sent to Docker build daemon
+
+# Development artifacts
+node_modules/
+dist/
+.vite/
+coverage/
+
+# Environment files (never bake secrets into an image)
+.env
+.env.*
+!.env.example
+
+# IDE and OS
+.vscode/
+.idea/
+*.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Test output
+test-results/
+playwright-report/

@@ -1,0 +1,38 @@
+# AI Service .dockerignore
+# Excludes files that must NOT be sent to Docker build daemon
+
+# Virtual environments (deps are installed fresh in the image)
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Environment files (never bake secrets into an image)
+.env
+.env.*
+!.env.example
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.egg-info/
+dist/
+build/
+
+# IDE and OS
+.vscode/
+.idea/
+*.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Ruff cache
+.ruff_cache/

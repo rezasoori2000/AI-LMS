@@ -4,11 +4,26 @@
 @tailwind utilities;
 
 /* ============================================================
-   Global CSS custom properties
-   Brand colors are defined here so tenants can override them
-   via injected CSS in Phase 4+ (white-labeling)
+   AI-LMS Design Tokens
+   ──────────────────────────────────────────────────────────
+   All tokens are CSS custom properties on :root so they can be
+   overridden without a rebuild:
+
+     • Tenant branding  → inject <style>:root{--color-brand-600:#e11d48}</style>
+     • Dark mode        → set data-theme="dark" on <html>
+     • RTL layout       → set dir="rtl" on <html> (i18n module does this)
+
+   Token naming convention:
+     --color-{role}-{scale}   e.g. --color-success-light
+     --radius-{size}
+     --shadow-{size|name}
+     --font-family-{variant}
+     --{dimension}-{component} e.g. --topbar-height
    ============================================================ */
 :root {
+  /* ── Brand palette ────────────────────────────────────────────
+     Override these five vars to rebrand. Downstream semantic tokens
+     (sidebar-active-bg, etc.) should also be updated when rebranding. */
   --color-brand-50:  #eff6ff;
   --color-brand-100: #dbeafe;
   --color-brand-200: #bfdbfe;
@@ -16,9 +31,153 @@
   --color-brand-600: #2563eb;
   --color-brand-700: #1d4ed8;
   --color-brand-900: #1e3a8a;
+
+  /* ── Surface tokens ───────────────────────────────────────────
+     Three tiers of elevation:
+       surface         = page background (lowest)
+       surface-raised  = cards, panels, sidebars
+       surface-overlay = hover tints, dropdowns, tooltips (highest) */
+  --color-surface:         #ffffff;
+  --color-surface-raised:  #f9fafb;
+  --color-surface-overlay: #f3f4f6;
+
+  /* ── Content (text) tokens ────────────────────────────────────
+     Use these over Tailwind's gray-* classes so dark mode and
+     tenant colour-scheme changes work automatically. */
+  --color-content-primary:   #111827;
+  --color-content-secondary: #6b7280;
+  --color-content-muted:     #9ca3af;
+  --color-content-inverse:   #ffffff;
+
+  /* ── Stroke (border) tokens ───────────────────────────────── */
+  --color-stroke:        #e5e7eb;
+  --color-stroke-strong: #d1d5db;
+
+  /* ── Sidebar tokens ───────────────────────────────────────────
+     Override all five to produce a light-sidebar tenant theme. */
+  --color-sidebar-bg:          #0f172a;
+  --color-sidebar-text:        #94a3b8;
+  --color-sidebar-hover-bg:    #1e293b;
+  --color-sidebar-active-bg:   #2563eb;
+  --color-sidebar-active-text: #ffffff;
+
+  /* ── Status tokens ────────────────────────────────────────────
+     Each role has three tiers:
+       -light = tinted background (bg-success-light)
+       DEFAULT = icon, border, indicator (bg-success, border-success)
+       -dark   = readable text on tinted bg (text-success-dark)
+     Info uses sky-blue to stay distinct from the brand blue. */
+  --color-success-light: #f0fdf4;
+  --color-success:       #16a34a;
+  --color-success-dark:  #15803d;
+
+  --color-warning-light: #fffbeb;
+  --color-warning:       #d97706;
+  --color-warning-dark:  #b45309;
+
+  --color-error-light:   #fef2f2;
+  --color-error:         #dc2626;
+  --color-error-dark:    #b91c1c;
+
+  --color-info-light:    #f0f9ff;
+  --color-info:          #0284c7;
+  --color-info-dark:     #0369a1;
+
+  /* ── Border radius tokens ──────────────────────────────────────
+     Override all --radius-* vars to produce a squared or pill theme
+     without touching component class names. */
+  --radius-sm:   4px;
+  --radius-md:   6px;
+  --radius-lg:   10px;
+  --radius-xl:   16px;
+  --radius-full: 9999px;
+
+  /* ── Shadow tokens ────────────────────────────────────────────
+     Named by use-case, not size.  Dark mode overrides increase
+     opacity because dark surfaces need stronger shadow contrast. */
+  --shadow-sm:       0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-card:     0 1px 3px 0 rgb(0 0 0 / 0.1),
+                     0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-dropdown: 0 10px 15px -3px rgb(0 0 0 / 0.1),
+                     0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-modal:    0 20px 25px -5px rgb(0 0 0 / 0.1),
+                     0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+  /* ── Typography tokens ────────────────────────────────────────
+     Font families are the only typography tokens needed as CSS vars —
+     everything else (size, weight, line-height) uses Tailwind's scale.
+
+     To add a tenant brand font:
+       Override --font-family-sans in the tenant style injection.
+     To add proper Arabic/Persian font:
+       Override --font-family-rtl-sans (or add a @font-face + @import above). */
+  --font-family-sans:     'Inter', system-ui, -apple-system, sans-serif;
+  --font-family-rtl-sans: 'Vazirmatn', 'Noto Sans Arabic', 'Segoe UI',
+                          system-ui, sans-serif;
+  --font-family-mono:     'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+
+  /* ── Layout dimension tokens ───────────────────────────────── */
+  --topbar-height: 64px;
+  --sidebar-width: 240px;
 }
 
-/* RTL/LTR layout base — direction is set on <html> by i18n module */
-[dir='rtl'] body {
-  font-family: 'Inter', system-ui, sans-serif;
+/* ============================================================
+   Dark mode
+   ──────────────────────────────────────────────────────────
+   Activated by:  document.documentElement.dataset.theme = 'dark'
+   Deactivated by: delete document.documentElement.dataset.theme
+
+   Only surface/content/stroke tokens switch.
+   Brand, status, and sidebar tokens are unchanged because the
+   sidebar is already dark-coloured and status colours need to be
+   equally recognisable in both modes.
+   ============================================================ */
+[data-theme='dark'] {
+  --color-surface:         #0f172a; /* slate-900 */
+  --color-surface-raised:  #1e293b; /* slate-800 */
+  --color-surface-overlay: #334155; /* slate-700 */
+
+  --color-content-primary:   #f1f5f9; /* slate-100 */
+  --color-content-secondary: #94a3b8; /* slate-400 */
+  --color-content-muted:     #64748b; /* slate-500 */
+  --color-content-inverse:   #0f172a;
+
+  --color-stroke:        #1e293b; /* slate-800 */
+  --color-stroke-strong: #334155; /* slate-700 */
+
+  /* Heavier shadows because dark surfaces need more contrast to feel elevated */
+  --shadow-sm:       0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-card:     0 1px 3px 0 rgb(0 0 0 / 0.4),
+                     0 1px 2px -1px rgb(0 0 0 / 0.4);
+  --shadow-dropdown: 0 10px 15px -3px rgb(0 0 0 / 0.4),
+                     0 4px 6px -4px rgb(0 0 0 / 0.4);
+  --shadow-modal:    0 20px 25px -5px rgb(0 0 0 / 0.5),
+                     0 8px 10px -6px rgb(0 0 0 / 0.5);
+}
+
+/* ============================================================
+   Typography base
+   ──────────────────────────────────────────────────────────
+   Set font-family here (not in Tailwind) so RTL switching is a
+   single CSS selector change. Tailwind's preflight resets very
+   little here, so these rules are safe.
+   ============================================================ */
+html {
+  font-family: var(--font-family-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* RTL: swap to script-optimised font stack.
+   Applies to the whole document when dir="rtl" is set on <html>.
+   Latin characters within RTL text still resolve via the OS latin
+   fallback at the end of the --font-family-rtl-sans stack, so mixed
+   content (e.g. an Arabic page with English code snippets) renders
+   correctly without a per-element override. */
+[dir='rtl'] {
+  font-family: var(--font-family-rtl-sans);
+}
+
+code, kbd, samp, pre {
+  font-family: var(--font-family-mono);
 }

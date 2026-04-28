@@ -1,19 +1,24 @@
 import type { Direction, Locale } from '@/types'
 
-const RTL_LANGUAGES: Locale[] = ['ar', 'fa', 'he', 'ur']
+/**
+ * Canonical set of RTL locale codes.
+ * Import this — do not define your own copy.
+ * Add new RTL locales here and all consumers pick up the change automatically.
+ */
+export const RTL_LOCALES = new Set<Locale>(['ar', 'fa', 'he', 'ur'])
 
 /**
  * Returns the text direction for a given locale.
  */
 export function getDirection(locale: Locale): Direction {
-  return RTL_LANGUAGES.includes(locale) ? 'rtl' : 'ltr'
+  return RTL_LOCALES.has(locale) ? 'rtl' : 'ltr'
 }
 
 /**
  * Returns true if a locale uses right-to-left layout.
  */
 export function isRtl(locale: Locale): boolean {
-  return getDirection(locale) === 'rtl'
+  return RTL_LOCALES.has(locale)
 }
 
 /**

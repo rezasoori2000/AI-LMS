@@ -27,7 +27,15 @@ export default defineConfig({
     setupFiles: ['./src/tests/setup.ts'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'lcov'],
+      reporter: ['text', 'lcov', 'html'],
+      // Only measure coverage on source files, not test helpers or type stubs
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: [
+        'src/**/*.d.ts',
+        'src/tests/**',
+        'src/main.tsx',         // entry-point — nothing to unit-test here
+        'src/**/*index.ts',     // re-export barrels
+      ],
     },
   },
 })

@@ -16,7 +16,23 @@
     "lessons": "Lessons",
     "progress": "Progress",
     "settings": "Settings",
-    "logout": "Log out"
+    "logout": "Log out",
+    "tenants": "Tenants",
+    "users": "Users",
+    "teachers": "Teachers",
+    "students": "Students",
+    "courses": "Courses",
+    "children": "Children",
+    "adminDashboard": "Admin",
+    "teacherDashboard": "Teacher",
+    "parentDashboard": "Parent",
+    "studentDashboard": "Student",
+    "groups": {
+      "management": "Management",
+      "content": "Content",
+      "classes": "Classes",
+      "learning": "Learning"
+    }
   },
   "common": {
     "loading": "Loading...",
@@ -30,7 +46,8 @@
     "confirm": "Confirm",
     "search": "Search",
     "noResults": "No results found.",
-    "required": "This field is required."
+    "required": "This field is required.",
+    "comingSoon": "Coming in a future phase."
   },
   "auth": {
     "login": "Log in",
@@ -39,5 +56,74 @@
     "password": "Password",
     "forgotPassword": "Forgot password?",
     "logout": "Log out"
+  },
+  "dashboards": {
+    "admin": {
+      "title": "Admin Dashboard",
+      "description": "Platform overview and management",
+      "stats": {
+        "tenants": "Total Tenants",
+        "users": "Active Users",
+        "courses": "Courses",
+        "aiSessions": "AI Sessions"
+      },
+      "sections": {
+        "usersRoles": "Users & Roles",
+        "tenantManagement": "Tenant Management",
+        "coursesCurriculum": "Courses & Curriculum",
+        "contentLibrary": "Content Library",
+        "systemStatus": "System Status"
+      }
+    },
+    "teacher": {
+      "title": "Teacher Dashboard",
+      "description": "Manage your classes and track student progress",
+      "stats": {
+        "students": "My Students",
+        "lessons": "Published Lessons",
+        "assignments": "Open Assignments",
+        "avgScore": "Avg. Score"
+      },
+      "sections": {
+        "myClasses": "My Classes",
+        "upcomingLessons": "Upcoming Lessons",
+        "flaggedLearners": "Flagged Learners",
+        "openAssignments": "Open Assignments",
+        "recentSubmissions": "Recent Submissions"
+      }
+    },
+    "parent": {
+      "title": "Parent Dashboard",
+      "description": "Track your children\u2019s learning journey",
+      "stats": {
+        "children": "Children",
+        "lessonsCompleted": "Lessons Completed",
+        "weeklyTime": "Time This Week",
+        "overallProgress": "Overall Progress"
+      },
+      "sections": {
+        "childrenOverview": "Children Overview",
+        "weeklySchedule": "Weekly Schedule",
+        "recentLessons": "Recent Lessons",
+        "reminders": "Reminders & Alerts"
+      }
+    },
+    "student": {
+      "title": "Student Dashboard",
+      "description": "Your lessons and learning journey",
+      "stats": {
+        "streak": "Day Streak",
+        "lessonsCompleted": "Lessons Completed",
+        "points": "Points Earned",
+        "level": "Current Level"
+      },
+      "sections": {
+        "continueLearning": "Continue Learning",
+        "aiTutor": "AI Tutor",
+        "mySubjects": "My Subjects",
+        "myProgress": "My Progress",
+        "myGoals": "My Goals"
+      }
+    }
   }
 }

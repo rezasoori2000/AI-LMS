@@ -1,38 +1,55 @@
 import { createBrowserRouter } from 'react-router-dom'
-import AppLayout from '@/layouts/AppLayout'
-import AuthLayout from '@/layouts/AuthLayout'
-import HomePage from '@/pages/HomePage'
+import AppLayout   from '@/layouts/AppLayout'
+import AuthLayout  from '@/layouts/AuthLayout'
+import HomePage    from '@/pages/HomePage'
 import NotFoundPage from '@/pages/NotFoundPage'
+import { adminRoutes }   from '@/routes/modules/admin.routes'
+import { teacherRoutes } from '@/routes/modules/teacher.routes'
+import { parentRoutes }  from '@/routes/modules/parent.routes'
+import { studentRoutes } from '@/routes/modules/student.routes'
 
 /**
- * Central route definitions for AI-LMS.
+ * Central router for AI-LMS.
  *
- * Structure:
- * - '/'            → AppLayout (authenticated shell) — placeholder for now
- * - '/auth/*'      → AuthLayout (login, register) — added in Section 2
- * - '*'            → NotFoundPage
+ * Route tree (Phase 1 Section 2 Part 2 — route structure):
  *
- * Role-based route guards will be added in Section 2 after auth is implemented.
+ *  /                     → AppLayout
+ *    index               → HomePage
+ *    admin/*             → adminRoutes   (AdminDashboardPage + sub-route stubs)
+ *    teacher/*           → teacherRoutes (TeacherDashboardPage + sub-route stubs)
+ *    parent/*            → parentRoutes  (ParentDashboardPage + sub-route stubs)
+ *    student/*           → studentRoutes (StudentDashboardPage + sub-route stubs)
+ *  /auth                 → AuthLayout
+ *    (login/register added in Section 2 — auth feature module)
+ *  *                     → NotFoundPage
+ *
+ * Each domain module is a RouteObject[] spread into AppLayout's children.
+ * Sub-routes currently render ComingSoonPage; swap the element when the real
+ * page is ready — the path, handle, and access metadata stay unchanged.
+ *
+ * Phase 2 auth guard integration:
+ *   Add a `loader` to the AppLayout route that reads
+ *   `matchRoutes(router.routes, url).at(-1)?.route.handle?.access`
+ *   and redirects to /auth/login or /403 as appropriate.
+ *   Route handle metadata (access, titleKey) is already in place in each module.
  */
 export const router = createBrowserRouter([
   {
-    // Main authenticated app shell
     path: '/',
     element: <AppLayout />,
     children: [
-      {
-        index: true,
-        element: <HomePage />,
-      },
-      // Placeholder: dashboard, lessons, progress routes added in later sections
+      { index: true, element: <HomePage /> },
+      ...adminRoutes,
+      ...teacherRoutes,
+      ...parentRoutes,
+      ...studentRoutes,
     ],
   },
   {
-    // Auth shell — login/register pages (Section 2)
     path: '/auth',
     element: <AuthLayout />,
     children: [
-      // Placeholder: /auth/login, /auth/register
+      // /auth/login, /auth/register — added in Section 2 auth feature module
     ],
   },
   {

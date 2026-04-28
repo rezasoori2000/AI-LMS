@@ -1,0 +1,31 @@
+# Backend .dockerignore
+# Excludes files that must NOT be sent to Docker build daemon
+
+# Build outputs
+**/bin/
+**/obj/
+
+# Environment files (never bake secrets into an image)
+.env
+.env.*
+!.env.example
+
+# IDE and OS
+.vscode/
+.idea/
+*.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Test result files
+TestResults/
+coverage/
+nunit-*.xml
+
+# User-specific files
+*.user
+*.suo
+.vs/

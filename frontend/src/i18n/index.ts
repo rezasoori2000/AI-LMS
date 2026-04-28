@@ -3,6 +3,7 @@ import { initReactI18next } from 'react-i18next'
 import LanguageDetector from 'i18next-browser-languagedetector'
 
 import en from './locales/en.json'
+import { isRtl } from '@/utils/direction'
 
 /**
  * i18n initialization.
@@ -14,10 +15,8 @@ import en from './locales/en.json'
  * To add a new language:
  * 1. Create src/i18n/locales/<lang>.json
  * 2. Import it here and add to resources
- * 3. Add to rtlLanguages if applicable
+ * 3. Add the locale code to RTL_LOCALES in utils/direction.ts if RTL
  */
-
-const RTL_LANGUAGES = ['ar', 'fa', 'he', 'ur']
 
 i18n
   .use(LanguageDetector)
@@ -40,9 +39,8 @@ i18n
 
 // Apply document direction when language is initialized or changed
 function applyDirection(lng: string) {
-  const dir = RTL_LANGUAGES.includes(lng) ? 'rtl' : 'ltr'
   document.documentElement.setAttribute('lang', lng)
-  document.documentElement.setAttribute('dir', dir)
+  document.documentElement.setAttribute('dir', isRtl(lng) ? 'rtl' : 'ltr')
 }
 
 i18n.on('initialized', () => applyDirection(i18n.language))

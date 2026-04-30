@@ -2,7 +2,8 @@ import { createBrowserRouter } from 'react-router-dom'
 import AppLayout   from '@/layouts/AppLayout'
 import AuthLayout  from '@/layouts/AuthLayout'
 import HomePage    from '@/pages/HomePage'
-import NotFoundPage from '@/pages/NotFoundPage'
+import NotFoundPage    from '@/pages/NotFoundPage'
+import ForbiddenPage   from '@/pages/ForbiddenPage'
 import { adminRoutes }   from '@/routes/modules/admin.routes'
 import { teacherRoutes } from '@/routes/modules/teacher.routes'
 import { parentRoutes }  from '@/routes/modules/parent.routes'
@@ -38,7 +39,7 @@ export const router = createBrowserRouter([
     path: '/',
     element: <AppLayout />,
     children: [
-      { index: true, element: <HomePage /> },
+      { index: true, element: <HomePage />, handle: { titleKey: 'nav.home', access: 'public' } },
       ...adminRoutes,
       ...teacherRoutes,
       ...parentRoutes,
@@ -51,6 +52,13 @@ export const router = createBrowserRouter([
     children: [
       // /auth/login, /auth/register — added in Section 2 auth feature module
     ],
+  },
+  {
+    // Role guard redirect target.
+    // Phase 2: auth loader throws redirect('/403') when the user's role
+    // is not in the matched route's handle.access array.
+    path: '/403',
+    element: <ForbiddenPage />,
   },
   {
     path: '*',

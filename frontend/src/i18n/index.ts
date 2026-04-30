@@ -3,7 +3,7 @@ import { initReactI18next } from 'react-i18next'
 import LanguageDetector from 'i18next-browser-languagedetector'
 
 import en from './locales/en.json'
-import { isRtl } from '@/utils/direction'
+import { applyDocumentDirection } from '@/utils/direction'
 
 /**
  * i18n initialization.
@@ -37,13 +37,7 @@ i18n
     },
   })
 
-// Apply document direction when language is initialized or changed
-function applyDirection(lng: string) {
-  document.documentElement.setAttribute('lang', lng)
-  document.documentElement.setAttribute('dir', isRtl(lng) ? 'rtl' : 'ltr')
-}
-
-i18n.on('initialized', () => applyDirection(i18n.language))
-i18n.on('languageChanged', applyDirection)
+i18n.on('initialized', () => applyDocumentDirection(i18n.language))
+i18n.on('languageChanged', applyDocumentDirection)
 
 export default i18n

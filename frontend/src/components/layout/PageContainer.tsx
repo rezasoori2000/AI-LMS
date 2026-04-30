@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 
 interface PageContainerProps {
   /** Page title — rendered as an <h1>. Required for accessibility. */
@@ -36,7 +36,8 @@ export function PageContainer({
   children,
   className = '',
 }: PageContainerProps) {
-  const headingId = `page-heading-${title.toLowerCase().replace(/\s+/g, '-')}`
+  const generatedId = useId()
+  const headingId   = `page-heading-${generatedId.replace(/:/g, '')}`
 
   return (
     <section

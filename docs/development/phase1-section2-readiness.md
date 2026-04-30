@@ -12,14 +12,16 @@ cd frontend
 npm install
 npm run type-check      # must exit 0, 0 TS errors
 npm run lint            # must exit 0
-npm run test -- --run   # must pass: 6 tests
+  npm run test -- --run   # must pass: 41 tests
 npm run build           # 142 modules, no errors
 ```
 
 Expected build output:
-- 142 modules
-- JS: ~323 KB / ~101 KB gzip
+- 143 modules
+- JS: ~325 KB / ~101 KB gzip
 - CSS: ~20 KB / ~4.8 KB gzip
+
+**Verified ✅ — Phase 1 Section 2 Parts 1–7 complete (2026-04-30)**
 
 ---
 

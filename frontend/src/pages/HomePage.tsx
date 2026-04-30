@@ -27,9 +27,9 @@ export default function HomePage() {
       description={t('home.subtitle')}
     >
       {/* Status badge */}
-      <div className="mb-6 inline-flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2">
-        <span aria-hidden="true" className="w-2 h-2 rounded-full bg-green-500 inline-block" />
-        Phase 1 Section 2 — UI shell complete
+      <div className="mb-6 inline-flex items-center gap-2 text-sm text-success-dark bg-success-light border border-success rounded-lg px-4 py-2">
+        <span aria-hidden="true" className="w-2 h-2 rounded-full bg-success inline-block" />
+        Phase 1 Section 2 — Complete
       </div>
 
       {/* Dashboard navigation cards */}

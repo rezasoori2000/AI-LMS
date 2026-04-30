@@ -8,29 +8,31 @@ All routing uses **React Router v6** with `createBrowserRouter`.
 
 ```
 / (AppLayout — authenticated shell)
+├── /                    → HomePage              (dev nav hub; Phase 2 → post-login redirect)
 ├── /admin               → AdminDashboardPage
-│   ├── /admin/users     → ComingSoonPage
 │   ├── /admin/tenants   → ComingSoonPage
+│   ├── /admin/users     → ComingSoonPage
+│   ├── /admin/teachers  → ComingSoonPage
+│   ├── /admin/students  → ComingSoonPage
 │   ├── /admin/courses   → ComingSoonPage
-│   ├── /admin/content   → ComingSoonPage
-│   ├── /admin/settings  → ComingSoonPage
-│   └── /admin/reports   → ComingSoonPage
+│   └── /admin/settings  → ComingSoonPage
 ├── /teacher             → TeacherDashboardPage
-│   ├── /teacher/classes → ComingSoonPage
-│   ├── /teacher/lessons → ComingSoonPage
-│   ├── /teacher/assignments → ComingSoonPage
-│   └── /teacher/students   → ComingSoonPage
+│   ├── /teacher/students → ComingSoonPage
+│   ├── /teacher/lessons  → ComingSoonPage
+│   ├── /teacher/courses  → ComingSoonPage
+│   └── /teacher/progress → ComingSoonPage
 ├── /parent              → ParentDashboardPage
-│   ├── /parent/children → ComingSoonPage
-│   └── /parent/schedule → ComingSoonPage
+│   ├── /parent/children  → ComingSoonPage
+│   └── /parent/progress  → ComingSoonPage
 └── /student             → StudentDashboardPage
-    ├── /student/courses  → ComingSoonPage
+    ├── /student/lessons  → ComingSoonPage
     └── /student/progress → ComingSoonPage
 
-/ (AuthLayout — unauthenticated)
-└── /auth/*              → (reserved, not yet built)
+/auth (AuthLayout — unauthenticated shell)
+└── /auth/*              → (login, register, forgot-password — Phase 2)
 
-* (catch-all) → NotFoundPage
+/403                     → ForbiddenPage         (role guard redirect target — Phase 2)
+*   (catch-all)          → NotFoundPage
 ```
 
 ---
@@ -98,16 +100,16 @@ interface RouteHandle {
 
 ## Navigation
 
-`src/app/nav.ts` holds the canonical nav item list. Each item has:
+`src/config/nav.ts` holds the canonical nav item list. Each item has:
 
 ```ts
 {
-  key: string           // unique ID
-  labelKey: string      // i18n key
-  path: string          // route path
-  icon: ReactNode       
-  allowedRoles: UserRole[]   // documents which roles see this item
-  sectionTitleKey?: string   // i18n key for the section group heading
+  key: string            // unique React list key
+  labelKey: string       // i18n key → t(labelKey) renders the label
+  href: string           // route path passed to <NavLink to={href}>
+  icon?: ReactNode       // Phase 2: lucide-react icon; optional for now
+  allowedRoles?: UserRole[]   // documents which roles see this item (metadata-only in Phase 1)
+  sectionTitleKey?: string    // i18n key for the section group heading
 }
 ```
 

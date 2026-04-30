@@ -37,7 +37,7 @@ export function Sidebar({ navItems, isOpen, onClose }: SidebarProps) {
   return (
     <aside
       id="sidebar"
-      aria-label={t('nav.home')} // replaced by a proper label once i18n key exists
+      aria-label={t('nav.sidebar')}
       className={[
         // Base: fixed full-height panel on mobile
         'fixed inset-y-0 start-0 z-30 flex w-sidebar flex-col',

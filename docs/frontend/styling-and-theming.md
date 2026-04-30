@@ -101,21 +101,46 @@ bg-info-light    text-info-dark    border-info       // info
 
 ```ts
 export const RTL_LOCALES = new Set<Locale>(['ar', 'fa', 'he', 'ur'])
+
+/** Returns 'ltr' | 'rtl' for any locale string. */
+export function getDirection(locale: Locale): Direction
+
+/** Returns true if the locale uses right-to-left layout. */
 export function isRtl(locale: Locale): boolean
-export function applyDirection(locale: Locale): void // sets lang + dir on <html>
+
+/** Sets lang + dir attributes on <html>. Called by i18n/index.ts on language change. */
+export function applyDocumentDirection(locale: Locale): void
 ```
 
-`applyDirection` is called on language change in `src/i18n/index.ts`. Components use `ms-*` / `me-*` / `ps-*` / `pe-*` Tailwind logical properties for directional spacing — **never** `ml-*` / `mr-*` / `pl-*` / `pr-*` in new code.
+`applyDocumentDirection` is called on language change in `src/i18n/index.ts`. Components use `ms-*` / `me-*` / `ps-*` / `pe-*` Tailwind logical properties for directional spacing — **never** `ml-*` / `mr-*` / `pl-*` / `pr-*` in new code.
 
 Adding a new RTL language:
 1. Add locale JSON to `src/i18n/locales/`
 2. Import it in `src/i18n/index.ts`
 3. Add the locale code to `RTL_LOCALES` in `direction.ts`
 
+### `useDirection` hook
+
+```ts
+import { useDirection } from '@/hooks/use-direction'
+const dir = useDirection() // 'ltr' | 'rtl'
+```
+
+Re-evaluates automatically when the i18n language changes. Use only when direction must be read in JavaScript (popover offsets, scroll calculations). For CSS-only changes prefer the `rtl:` Tailwind variant.
+
+### `useTheme` hook
+
+```ts
+import { useTheme } from '@/hooks/use-theme'
+const { isDark, toggleTheme } = useTheme()
+```
+
+Reads the OS colour-scheme preference on first mount, persists to `localStorage`, and writes `data-theme` on `<html>`. The CSS layer in `index.css` handles all visual switching — no component re-renders update colour values.
+
 ---
 
 ## What not to do
 
-- Do not use raw Tailwind gray-*, slate-*, or zinc-* color classes in components. Use semantic tokens instead.
+- Do not use raw Tailwind `gray-*`, `slate-*`, or `zinc-*` color classes in components. Use semantic tokens instead.
 - Do not use `ml-` / `mr-` / `pl-` / `pr-` for component spacing. Use logical equivalents.
-- Do not set `document.body.style.direction` manually. `applyDirection` handles this.
+- Do not call `document.documentElement.setAttribute('dir', …)` manually. `applyDocumentDirection` handles this via the i18n layer.

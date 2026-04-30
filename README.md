@@ -116,12 +116,14 @@ See [Phase 1 Section 1 Readiness Checklist](docs/development/phase1-section1-rea
 - [x] RTL/LTR foundation — `RTL_LOCALES` exported from single source, `applyDirection` sets `lang`/`dir` on `<html>`, logical spacing (`ms-*`/`me-*`) used throughout
 - [x] Shared UI primitives — `Button`, `Badge`, `Card`, `Input`, `StatCard`, `SectionCard`, `PlaceholderRow`, `SkeletonBlock`/`SkeletonText`
 - [x] Async/state components — `LoadingState`, `EmptyState`, `ErrorState`, `InlineFeedback`, `StateWrapper`
+- [x] State component i18n — all default strings resolved via `t()`, no hardcoded English fallbacks
+- [x] Feedback component tests — 31 RTL tests for all 5 feedback components (`@testing-library/react`)
 - [x] Placeholder dashboards — Admin, Teacher, Parent, Student each with stat rows and structured `SectionCard` sections
-- [x] i18n — all nav, section, and dashboard strings keyed in `en.json`
+- [x] i18n — all nav, section, dashboard, and state-component strings keyed in `en.json`
 - [x] Barrel exports for `@/components/ui` and `@/components/feedback`
 - [x] Frontend documentation (`docs/frontend/`)
 
-**Build metrics:** 142 modules · JS 323 KB / 101 KB gzip · CSS 20 KB / 4.8 KB gzip · 6/6 tests passing · 0 TS errors
+**Build metrics:** 143 modules · JS 325 KB / 101 KB gzip · CSS 20 KB / 4.7 KB gzip · 41/41 tests passing · 0 TS errors
 
 **Deferred to Phase 1, Section 3:**
 - Authentication (JWT / OAuth) and role-based access control

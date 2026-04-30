@@ -1,3 +1,7 @@
+import { useMatches } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import type { RouteHandle } from '@/routes/types'
+
 interface TopbarProps {
   onMenuClick: () => void
   isMenuOpen:  boolean
@@ -20,6 +24,11 @@ interface TopbarProps {
  * trailing edge in both LTR and RTL.
  */
 export function Topbar({ onMenuClick, isMenuOpen }: TopbarProps) {
+  const { t } = useTranslation()
+  const matches = useMatches()
+  const handle = matches.slice(-1)[0]?.handle as RouteHandle | undefined
+  const pageTitle = handle?.titleKey ? t(handle.titleKey) : null
+
   return (
     <header
       role="banner"
@@ -71,6 +80,14 @@ export function Topbar({ onMenuClick, isMenuOpen }: TopbarProps) {
 
       {/* Brand — shown only on desktop (sidebar already shows it on mobile) */}
       <span className="hidden font-semibold text-brand-600 md:block">AI-LMS</span>
+
+      {/* Mobile page title — current section name; hidden on desktop where the
+          sidebar active state + PageContainer h1 provide the same context. */}
+      {pageTitle && (
+        <span className="flex-1 truncate text-sm font-semibold text-content-primary md:hidden">
+          {pageTitle}
+        </span>
+      )}
 
       {/* Trailing actions — Phase 2: notifications, language switcher, user menu */}
       <div className="ms-auto flex items-center gap-2">

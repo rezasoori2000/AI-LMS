@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next'
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type LoadingSize = 'sm' | 'md' | 'lg'
@@ -37,14 +39,17 @@ interface LoadingStateProps {
  *   </div>
  */
 export function LoadingState({
-  message   = 'Loading…',
+  message,
   size      = 'md',
   className = '',
 }: LoadingStateProps) {
+  const { t } = useTranslation()
+  const label = message ?? t('common.loading')
+
   return (
     <div
       role="status"
-      aria-label={message}
+      aria-label={label}
       className={[
         'flex flex-col items-center justify-center gap-3 px-6 py-12',
         className,
@@ -76,7 +81,7 @@ export function LoadingState({
       </svg>
 
       {/* Visible caption (optional; always used as aria-label regardless) */}
-      {message !== 'Loading…' && (
+      {message && (
         <p aria-hidden="true" className="text-sm text-content-secondary">
           {message}
         </p>

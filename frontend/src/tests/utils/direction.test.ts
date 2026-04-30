@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { getDirection, isRtl } from '@/utils/direction'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { getDirection, isRtl, applyDocumentDirection } from '@/utils/direction'
 
 describe('direction utils', () => {
   it('returns ltr for English', () => {
@@ -24,5 +24,37 @@ describe('direction utils', () => {
 
   it('isRtl returns true for Hebrew', () => {
     expect(isRtl('he')).toBe(true)
+  })
+})
+
+describe('applyDocumentDirection', () => {
+  beforeEach(() => {
+    // Reset to neutral state before each test
+    document.documentElement.removeAttribute('dir')
+    document.documentElement.removeAttribute('lang')
+  })
+
+  it('sets dir="ltr" and lang="en" for English', () => {
+    applyDocumentDirection('en')
+    expect(document.documentElement.getAttribute('dir')).toBe('ltr')
+    expect(document.documentElement.getAttribute('lang')).toBe('en')
+  })
+
+  it('sets dir="rtl" and lang="ar" for Arabic', () => {
+    applyDocumentDirection('ar')
+    expect(document.documentElement.getAttribute('dir')).toBe('rtl')
+    expect(document.documentElement.getAttribute('lang')).toBe('ar')
+  })
+
+  it('sets dir="rtl" and lang="fa" for Persian', () => {
+    applyDocumentDirection('fa')
+    expect(document.documentElement.getAttribute('dir')).toBe('rtl')
+    expect(document.documentElement.getAttribute('lang')).toBe('fa')
+  })
+
+  it('sets dir="ltr" for an unknown locale', () => {
+    applyDocumentDirection('xx')
+    expect(document.documentElement.getAttribute('dir')).toBe('ltr')
+    expect(document.documentElement.getAttribute('lang')).toBe('xx')
   })
 })

@@ -35,11 +35,11 @@ public static class ApplicationBuilderExtensions
         // 5. Tenant resolution — deferred to Phase 2
         // app.UseMiddleware<TenantMiddleware>();
 
-        // 6. Authentication — deferred to Phase 2
-        // app.UseAuthentication();
+        // 6. Authentication — validates JWT bearer tokens on incoming requests
+        app.UseAuthentication();
 
-        // 7. Authorization — deferred to Phase 2
-        // app.UseAuthorization();
+        // 7. Authorization — enforces [Authorize] policies and role requirements
+        app.UseAuthorization();
 
         // 8. Controllers and health endpoint
         app.MapControllers();

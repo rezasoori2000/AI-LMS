@@ -53,8 +53,8 @@ export default function ComingSoonPage() {
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
           ].join(' ')}
         >
-          {/* Logical arrow: points left in LTR, right in RTL */}
-          <span aria-hidden="true">←</span>
+          {/* Mirror the arrow horizontally in RTL so it always points "back" */}
+          <span aria-hidden="true" className="inline-block rtl:scale-x-[-1]">←</span>
           {t('common.back')}
         </Link>
       </div>

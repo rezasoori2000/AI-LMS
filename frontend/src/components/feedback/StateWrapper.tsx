@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { LoadingState } from './LoadingState'
 import { ErrorState }   from './ErrorState'
 import { EmptyState }   from './EmptyState'
@@ -37,14 +38,6 @@ interface StateWrapperProps {
   stateClassName?: string
 
   children: ReactNode
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function resolveErrorMessage(error?: Error | string | null): string {
-  if (!error) return 'An unexpected error occurred. Please try again.'
-  if (typeof error === 'string') return error
-  return error.message || 'An unexpected error occurred. Please try again.'
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -98,13 +91,21 @@ export function StateWrapper({
   error,
   onRetry,
 
-  emptyTitle       = 'Nothing here yet',
+  emptyTitle,
   emptyDescription,
   emptyAction,
 
   stateClassName,
   children,
 }: StateWrapperProps) {
+  const { t } = useTranslation()
+  const resolvedEmptyTitle = emptyTitle ?? t('common.nothingHereYet')
+  const resolvedError = !error
+    ? t('common.anErrorOccurred')
+    : typeof error === 'string'
+      ? error
+      : error.message || t('common.anErrorOccurred')
+
   if (isLoading) {
     return (
       <LoadingState
@@ -119,7 +120,7 @@ export function StateWrapper({
     return (
       <ErrorState
         title={errorTitle}
-        message={resolveErrorMessage(error)}
+        message={resolvedError}
         onRetry={onRetry}
         className={stateClassName}
       />
@@ -129,7 +130,7 @@ export function StateWrapper({
   if (isEmpty) {
     return (
       <EmptyState
-        title={emptyTitle}
+        title={resolvedEmptyTitle}
         description={emptyDescription}
         action={emptyAction}
         className={stateClassName}

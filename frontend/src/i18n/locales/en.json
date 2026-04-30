@@ -12,6 +12,8 @@
   },
   "nav": {
     "home": "Home",
+    "sidebar": "Application navigation",
+    "skipToContent": "Skip to main content",
     "dashboard": "Dashboard",
     "lessons": "Lessons",
     "progress": "Progress",
@@ -47,7 +49,11 @@
     "search": "Search",
     "noResults": "No results found.",
     "required": "This field is required.",
-    "comingSoon": "Coming in a future phase."
+    "tryAgain": "Try again",
+    "comingSoon": "Coming in a future phase.",
+    "somethingWentWrong": "Something went wrong",
+    "nothingHereYet": "Nothing here yet",
+    "anErrorOccurred": "An unexpected error occurred. Please try again."
   },
   "auth": {
     "login": "Log in",

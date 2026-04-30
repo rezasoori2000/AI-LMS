@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -36,11 +37,14 @@ interface ErrorStateProps {
  *   />
  */
 export function ErrorState({
-  title     = 'Something went wrong',
+  title,
   message,
   onRetry,
   className = '',
 }: ErrorStateProps) {
+  const { t } = useTranslation()
+  const resolvedTitle = title ?? t('common.somethingWentWrong')
+
   return (
     <div
       role="alert"
@@ -67,14 +71,14 @@ export function ErrorState({
         />
       </svg>
 
-      <h3 className="text-sm font-semibold text-content-primary">{title}</h3>
+      <h3 className="text-sm font-semibold text-content-primary">{resolvedTitle}</h3>
 
       <p className="mt-1 max-w-xs text-sm text-content-secondary">{message}</p>
 
       {onRetry && (
         <div className="mt-4">
           <Button variant="secondary" size="sm" onClick={onRetry}>
-            Try again
+            {t('common.tryAgain')}
           </Button>
         </div>
       )}

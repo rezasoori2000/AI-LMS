@@ -31,11 +31,13 @@ Export all primitives via the folder barrel — never from the component file di
 **Always destructure with defaults at the function signature:**
 ```ts
 export function LoadingState({
-  message   = 'Loading…',
+  message,          // optional — defaults to t('common.loading') inside the component
   size      = 'md',
   className = '',
 }: LoadingStateProps) { … }
 ```
+
+**i18n defaults via `t()`, not hardcoded strings** — use `const resolved = prop ?? t('common.key')` inside the component body so the default is automatically translated when a new locale is added. Never use a hardcoded English string as a destructuring default for user-visible text.
 
 **`className` on every visual primitive** — allows one-off sizing overrides at the call site without creating a variant prop for every case.
 
@@ -89,7 +91,7 @@ When a component fetches data, wrap its output in `StateWrapper` rather than wri
   <StateWrapper
     isLoading={isLoading}
     isError={isError}
-    error={error}
+    error={error}          // Error | string | null — StateWrapper resolves .message
     isEmpty={!classes?.length}
     onRetry={refetch}
     emptyTitle={t('empty.noClasses')}

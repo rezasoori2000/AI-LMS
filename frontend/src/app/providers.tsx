@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { AuthProvider } from '@/context/AuthContext'
 
 /**
  * Shared QueryClient instance.
@@ -28,17 +29,19 @@ interface AppProvidersProps {
  *
  * Current providers:
  * - QueryClientProvider (TanStack Query — server state)
+ * - AuthProvider       (Section 3 Part 4 — auth state + session)
  *
  * Future providers to add here:
- * - AuthProvider (Section 2)
  * - TenantProvider (Phase 3)
  * - ThemeProvider (Phase 4 — tenant branding)
  */
 export function AppProviders({ children }: AppProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
-      {children}
-      {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+      <AuthProvider>
+        {children}
+        {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+      </AuthProvider>
     </QueryClientProvider>
   )
 }

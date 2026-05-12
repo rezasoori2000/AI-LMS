@@ -139,17 +139,107 @@ See [Phase 1 Section 2 Readiness Checklist](docs/development/phase1-section2-rea
 
 ---
 
+## Phase 1 — Section 3 Status
+
+**Completed:**
+- [x] `User` aggregate root — PBKDF2-SHA256 password hashing, JWT HS256 token service
+- [x] `AuthService` — register + login, `IUserRepository` abstraction
+- [x] `ExceptionHandlingMiddleware` — RFC 7807 Problem Details; 401/409/500 mapped to correct status codes
+- [x] Frontend `LoginPage` + `RegisterPage`, `AuthContext`, `ProtectedRoute`, `tokenStorage`
+- [x] Session restoration on hard-refresh; session-expired event; `AuthLayout` redirect guard
+- [x] 96 passing tests after Section 4 (original Section 3 count: 31 backend, 41 frontend)
+
+**Deferred to Phase 1, Section 4+:**
+- EF Core database setup and PostgreSQL migration
+- Domain model beyond User
+
+See [Phase 1 Section 3 Readiness Checklist](docs/development/phase1-section3-readiness.md) before starting Section 4.
+
+---
+
+## Phase 1 — Section 4 Status
+
+**Completed:**
+- [x] 16 domain entities — User, ParentProfile, StudentProfile, Grade, Subject, Chapter, Lesson, Question, Enrollment, LessonProgress, AiConversation, AiMessage
+- [x] `LmsDbContext` with 12 DbSets; `ApplyConfigurationsFromAssembly`; `SaveChangesAsync` audit hook
+- [x] 12 `IEntityTypeConfiguration<T>` files — `snake_case` tables, explicit FK names, all indexes
+- [x] `InitialCreate` migration — full schema, FK constraints, filtered unique index on enrollments
+- [x] PostgreSQL 16 Docker service wired into `docker-compose.yml` with healthcheck
+- [x] `DatabaseSeeder` — idempotent dev-only seed: 8 users (all roles), curriculum content, enrollments, progress
+- [x] `ILmsDbContext` interface in Application layer; `UserRepository` (EF Core) replaces `InMemoryUserRepository`
+- [x] `LmsWebApplicationFactory` — InMemory EF Core, no Postgres required in integration tests
+- [x] Architecture docs: domain model overview, persistence/migrations, seed data guide
+- [x] **96 passing tests** — 70 domain + 12 application + 14 API — 0 warnings, 0 errors
+
+**Deferred to Phase 1, Section 5+:**
+- Admin CRUD endpoints (grades, subjects, chapters, lessons, questions)
+- Global `TenantId` query filter (Phase 3)
+- `CreatedBy`/`UpdatedBy` auto-population via `ICurrentUserService` (Phase 3)
+- `TeacherProfile` entity and classroom model (Phase 3)
+- `ParentStudentLink` M:M join table (Phase 3)
+- Assessment attempt/answer tables (Phase 3)
+- Production migration CI/CD pipeline (Phase 3)
+
+See [Phase 1 Section 4 Readiness Checklist](docs/development/phase1-section4-readiness.md) before starting Section 5.
+
+---
+
+## Phase 1 — Section 5 Status
+
+**Completed:**
+- [x] 5 content services — `GradeService`, `SubjectService`, `ChapterService`, `LessonService`, `QuestionService` (Clean Architecture; no AutoMapper; no per-entity repository)
+- [x] 5 admin API controllers — full CRUD at `/api/admin/{grades,subjects,chapters,lessons,questions}`; `[Authorize]` + `[RequireRole]`
+- [x] `[Required]` / `[MaxLength]` / `[Range]` data annotations on all content request DTOs — invalid input returns 400, never 500
+- [x] `ContentNotFoundException` (→ 404) and `ContentConflictException` (→ 409) — handled by `ExceptionHandlingMiddleware`
+- [x] 8 admin frontend pages — list + form for all 5 entities (Grades, Subjects, Chapters, Lessons, Questions)
+- [x] Type-aware question form — MultipleChoice (4 options + index), TrueFalse, ShortAnswer; changing type resets type-specific fields
+- [x] Lesson-question association — `?lessonId=` URL filter on QuestionsPage; "Questions" button per lesson row
+- [x] `ConfirmDeleteButton`, `StateWrapper`, `mapApiError` reused across all 5 content entity pages
+- [x] i18n coverage — full `admin.content.questions` block; `common.saving` / `common.true` / `common.false` keys
+- [x] Consistent "Saving…" button text while mutation is pending across all 5 form pages
+- [x] **111 passing tests** — 70 domain + 12 application + 29 API (+15 AdminContent integration tests) · 41 frontend
+
+**Deferred to Phase 1, Section 6+:**
+- Publishing workflow (`IsPublished` lifecycle, draft/review/published states) — Phase 3
+- Media management (video, file attachments) — Phase 3
+- Advanced filtering, search, and server-side pagination — Phase 2
+- Audit history (`CreatedBy` / `UpdatedBy` auto-population) — Phase 3
+- Content localisation (multilingual lesson/question text) — Phase 3
+- Question `Explanation` field, tags, variable option counts, ordering — Phase 3
+- Assessment runtime (quiz sessions, attempts, scoring) — Phase 3
+- Content service unit tests in `LMS.Application.Tests` — Phase 2
+- FluentValidation and client-side Zod validation — Phase 2
+- Searchable / ComboBox selects for large dropdowns — Phase 2
+- Subject description field in admin form — Phase 2
+
+See [Phase 1 Section 5 Readiness Checklist](docs/development/phase1-section5-readiness.md) before starting Section 6.
+
+---
+
 ## Documentation
 
+### Architecture
 - [Architecture Overview](docs/architecture/architecture-overview.md)
+- [Domain Model Overview](docs/architecture/domain-model-overview.md)
+- [Persistence and Migrations](docs/architecture/persistence-and-migrations.md)
+
+### Development
 - [Local Development Guide](docs/development/local-development.md)
 - [Folder Structure](docs/development/folder-structure.md)
+- [Seed Data Guide](docs/development/seed-data.md)
 - [Phase 1 Section 1 Readiness Checklist](docs/development/phase1-section1-readiness.md)
 - [Phase 1 Section 2 Readiness Checklist](docs/development/phase1-section2-readiness.md)
+- [Phase 1 Section 3 Readiness Checklist](docs/development/phase1-section3-readiness.md)
+- [Phase 1 Section 4 Readiness Checklist](docs/development/phase1-section4-readiness.md)
+- [Phase 1 Section 5 Readiness Checklist](docs/development/phase1-section5-readiness.md)
+
+### Frontend
 - [Frontend UI Foundation](docs/frontend/ui-foundation.md)
 - [Routing and Layouts](docs/frontend/routing-and-layouts.md)
 - [Styling and Theming](docs/frontend/styling-and-theming.md)
 - [Component Conventions](docs/frontend/component-conventions.md)
+
+### Contributing
 - [Contributing](CONTRIBUTING.md)
 
 ---

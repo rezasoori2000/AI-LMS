@@ -1,4 +1,6 @@
 using LMS.Application.Auth;
+using LMS.Application.Content;
+using LMS.Application.Parent;
 
 namespace LMS.Api.Middleware;
 
@@ -10,6 +12,9 @@ namespace LMS.Api.Middleware;
 /// <list type="bullet">
 ///   <item><see cref="InvalidCredentialsException"/> → 401 Unauthorized</item>
 ///   <item><see cref="EmailAlreadyRegisteredException"/> → 409 Conflict</item>
+///   <item><see cref="ContentNotFoundException"/> → 404 Not Found</item>
+///   <item><see cref="ContentConflictException"/> → 409 Conflict</item>
+///   <item><see cref="ParentAccessDeniedException"/> → 403 Forbidden</item>
 ///   <item>Anything else → 500 Internal Server Error</item>
 /// </list>
 /// </summary>
@@ -33,7 +38,11 @@ public sealed class ExceptionHandlingMiddleware
         catch (Exception ex)
         {
             // Log at Warning for expected domain errors; Error for genuine server faults.
-            if (ex is InvalidCredentialsException or EmailAlreadyRegisteredException)
+            if (ex is InvalidCredentialsException
+                   or EmailAlreadyRegisteredException
+                   or ContentNotFoundException
+                   or ContentConflictException
+                   or ParentAccessDeniedException)
                 _logger.LogWarning(
                     "Domain exception. Method={Method} Path={Path} Type={ExType} TraceId={TraceId}",
                     context.Request.Method,
@@ -70,6 +79,21 @@ public sealed class ExceptionHandlingMiddleware
                 (StatusCodes.Status409Conflict,
                  "https://tools.ietf.org/html/rfc7231#section-6.5.8",
                  "The email address is already registered."),
+
+            ContentNotFoundException =>
+                (StatusCodes.Status404NotFound,
+                 "https://tools.ietf.org/html/rfc7231#section-6.5.4",
+                 exception.Message),
+
+            ContentConflictException =>
+                (StatusCodes.Status409Conflict,
+                 "https://tools.ietf.org/html/rfc7231#section-6.5.8",
+                 exception.Message),
+
+            ParentAccessDeniedException =>
+                (StatusCodes.Status403Forbidden,
+                 "https://tools.ietf.org/html/rfc7231#section-6.5.3",
+                 exception.Message),
 
             _ =>
                 (StatusCodes.Status500InternalServerError,

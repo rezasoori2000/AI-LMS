@@ -5,18 +5,16 @@ using LMS.Domain.Users;
 namespace LMS.Infrastructure.Persistence;
 
 /// <summary>
-/// In-memory user store for local development and unit/integration testing.
-/// Replaces the real PostgreSQL-backed repository until Phase 3 adds EF Core.
+/// In-memory user store — REPLACED by <see cref="UserRepository"/> (EF Core / PostgreSQL).
 ///
-/// Thread-safety: two <see cref="ConcurrentDictionary{TKey,TValue}"/> instances
-/// act as the primary store (by ID) and an email index (by normalised email).
-/// Registering this as a <b>singleton</b> keeps the state alive for the process
-/// lifetime — suitable for development but never for production.
+/// Retained for reference and as a fallback if a test or tool needs a zero-infrastructure
+/// IUserRepository.  No longer registered in <see cref="DependencyInjection"/>.
 ///
-/// <see cref="SaveChangesAsync"/> is a no-op here because every mutation is
-/// applied immediately inside <see cref="AddAsync"/>. The method exists to
-/// satisfy the unit-of-work contract that the EF Core implementation will fulfil.
+/// To reinstate (e.g. for a standalone in-process test):
+///   services.AddSingleton&lt;IUserRepository, InMemoryUserRepository&gt;();
 /// </summary>
+[Obsolete("Use UserRepository (EF Core) instead. " +
+          "This class exists as a reference/fallback only and is not registered in DI.")]
 public sealed class InMemoryUserRepository : IUserRepository
 {
     // Primary store: UserId → User

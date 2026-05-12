@@ -1,7 +1,14 @@
 using LMS.Application.Auth;
 using LMS.Application.Auth.Dtos;
 using LMS.Application.Common.Interfaces;
+using LMS.Domain.Catalog;
+using LMS.Domain.Conversations;
+using LMS.Domain.Curriculum;
+using LMS.Domain.Enrollments;
+using LMS.Domain.Progress;
+using LMS.Domain.Students;
 using LMS.Domain.Users;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace LMS.Application.Tests.Auth;
@@ -63,15 +70,60 @@ internal sealed class FakeTokenService : ITokenService
     public string GenerateAccessToken(User user) => $"fake-token-for:{user.Email}";
 }
 
+/// <summary>
+/// Minimal ILmsDbContext fake for AuthService unit tests.
+/// Only ParentProfiles needs real DbSet behaviour; all other sets throw NotImplemented.
+/// Uses EF Core InMemory provider scoped to this instance.
+/// </summary>
+internal sealed class FakeDbContextForAuth : ILmsDbContext
+{
+    private readonly DbContextOptions<FakeInMemoryDbContext> _opts;
+    private readonly FakeInMemoryDbContext _ctx;
+
+    public FakeDbContextForAuth()
+    {
+        _opts = new DbContextOptionsBuilder<FakeInMemoryDbContext>()
+            .UseInMemoryDatabase($"auth-test-{Guid.NewGuid()}")
+            .Options;
+        _ctx = new FakeInMemoryDbContext(_opts);
+    }
+
+    public DbSet<ParentProfile> ParentProfiles => _ctx.Set<ParentProfile>();
+
+    // Unused in AuthService unit tests — throw if accidentally called.
+    public DbSet<User>           Users           => throw new NotImplementedException();
+    public DbSet<Grade>          Grades          => throw new NotImplementedException();
+    public DbSet<Subject>        Subjects        => throw new NotImplementedException();
+    public DbSet<Chapter>        Chapters        => throw new NotImplementedException();
+    public DbSet<Lesson>         Lessons         => throw new NotImplementedException();
+    public DbSet<Question>       Questions       => throw new NotImplementedException();
+    public DbSet<StudentProfile> StudentProfiles => throw new NotImplementedException();
+    public DbSet<Enrollment>     Enrollments     => throw new NotImplementedException();
+    public DbSet<LessonProgress> LessonProgress  => throw new NotImplementedException();
+    public DbSet<AiConversation> AiConversations => throw new NotImplementedException();
+    public DbSet<AiMessage>      AiMessages      => throw new NotImplementedException();
+
+    public Task<int> SaveChangesAsync(CancellationToken ct = default) =>
+        _ctx.SaveChangesAsync(ct);
+}
+
+/// <summary>Thin EF Core DbContext used only by FakeDbContextForAuth.</summary>
+internal sealed class FakeInMemoryDbContext : DbContext
+{
+    public FakeInMemoryDbContext(DbContextOptions<FakeInMemoryDbContext> opts) : base(opts) { }
+    public DbSet<ParentProfile> ParentProfiles => Set<ParentProfile>();
+}
+
 // ── Test helpers ──────────────────────────────────────────────────────────────
 
 file static class AuthServiceFactory
 {
     public static AuthService Create(
-        IUserRepository? repo    = null,
-        IPasswordHasher? hasher  = null,
-        ITokenService?   tokens  = null,
-        JwtSettings?     settings = null)
+        IUserRepository?  repo    = null,
+        ILmsDbContext?    db      = null,
+        IPasswordHasher?  hasher  = null,
+        ITokenService?    tokens  = null,
+        JwtSettings?      settings = null)
     {
         settings ??= new JwtSettings
         {
@@ -83,6 +135,7 @@ file static class AuthServiceFactory
 
         return new AuthService(
             repo    ?? new FakeUserRepository(),
+            db      ?? new FakeDbContextForAuth(),
             hasher  ?? new FakePasswordHasher(),
             tokens  ?? new FakeTokenService(),
             Options.Create(settings));

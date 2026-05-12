@@ -4,6 +4,9 @@ import AuthLayout  from '@/layouts/AuthLayout'
 import HomePage    from '@/pages/HomePage'
 import NotFoundPage    from '@/pages/NotFoundPage'
 import ForbiddenPage   from '@/pages/ForbiddenPage'
+import LoginPage       from '@/pages/auth/LoginPage'
+import RegisterPage    from '@/pages/auth/RegisterPage'
+import { ProtectedRoute }  from '@/components/auth/ProtectedRoute'
 import { adminRoutes }   from '@/routes/modules/admin.routes'
 import { teacherRoutes } from '@/routes/modules/teacher.routes'
 import { parentRoutes }  from '@/routes/modules/parent.routes'
@@ -37,7 +40,11 @@ import { studentRoutes } from '@/routes/modules/student.routes'
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <AppLayout />,
+    element: (
+      <ProtectedRoute>
+        <AppLayout />
+      </ProtectedRoute>
+    ),
     children: [
       { index: true, element: <HomePage />, handle: { titleKey: 'nav.home', access: 'public' } },
       ...adminRoutes,
@@ -50,7 +57,8 @@ export const router = createBrowserRouter([
     path: '/auth',
     element: <AuthLayout />,
     children: [
-      // /auth/login, /auth/register — added in Section 2 auth feature module
+      { path: 'login',    element: <LoginPage />,    handle: { titleKey: 'auth.login',    access: 'public' } },
+      { path: 'register', element: <RegisterPage />, handle: { titleKey: 'auth.register', access: 'public' } },
     ],
   },
   {

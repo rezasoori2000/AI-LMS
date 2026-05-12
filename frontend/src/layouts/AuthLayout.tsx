@@ -1,10 +1,21 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, Navigate } from 'react-router-dom'
+import { useAuth } from '@/context/AuthContext'
 
 /**
- * AuthLayout — centered layout for login, register, forgot password pages.
- * Added to routes in Section 2 when auth is implemented.
+ * AuthLayout — centered layout for login and register pages.
+ *
+ * Redirect behaviour:
+ * - While session is restoring, renders the layout normally (avoids a flash).
+ * - Once restoration is complete, an authenticated user is sent to '/'
+ *   so they never see the login/register forms when already signed in.
  */
 export default function AuthLayout() {
+  const { isAuthenticated, isRestoring } = useAuth()
+
+  if (!isRestoring && isAuthenticated) {
+    return <Navigate to="/" replace />
+  }
+
   return (
     <div className="min-h-screen bg-surface-raised flex items-center justify-center px-4">
       <div className="w-full max-w-md">

@@ -1,4 +1,7 @@
 using LMS.Api.Middleware;
+using LMS.Infrastructure.Persistence;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace LMS.Api.Extensions;
 
@@ -47,4 +50,38 @@ public static class ApplicationBuilderExtensions
 
         return app;
     }
+
+    /// <summary>
+    /// Applies pending EF Core migrations and seeds development data.
+    /// Only runs when the application is in the Development environment.
+    /// Safe to call on every startup — the seeder is idempotent.
+    ///
+    /// If the database is unreachable (e.g. in integration tests that use
+    /// <c>WebApplicationFactory</c> without a live PostgreSQL instance) the error
+    /// is logged as a warning and startup continues normally.
+    /// </summary>
+    public static async Task SeedDatabaseAsync(this WebApplication app)
+    {
+        if (!app.Environment.IsDevelopment()) return;
+
+        using var scope  = app.Services.CreateScope();
+        var logger = scope.ServiceProvider
+            .GetRequiredService<ILogger<DatabaseSeeder>>();
+
+        try
+        {
+            var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
+            await seeder.SeedAsync();
+        }
+        catch (Exception ex)
+        {
+            // A connection failure here most commonly means PostgreSQL is not running
+            // (e.g. integration tests that do not spin up a real database).
+            // Log and continue — the API itself should still start.
+            logger.LogWarning(ex,
+                "Database seed was skipped. " +
+                "If running locally, ensure PostgreSQL is running via 'docker compose up postgres'.");
+        }
+    }
 }
+

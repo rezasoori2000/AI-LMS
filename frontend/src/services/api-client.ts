@@ -1,4 +1,5 @@
 import axios, { type AxiosInstance, type InternalAxiosRequestConfig, type AxiosResponse } from 'axios'
+import { retrieveToken, clearToken } from '@/utils/tokenStorage'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api'
 
@@ -21,9 +22,8 @@ const apiClient: AxiosInstance = axios.create({
 
 // ── Request interceptor ──────────────────────────────────────
 // Attaches Bearer token from storage on every request.
-// Auth token storage strategy will be finalized in Section 2.
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  const token = localStorage.getItem('auth_token')
+  const token = retrieveToken()
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
@@ -31,14 +31,15 @@ apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 })
 
 // ── Response interceptor ─────────────────────────────────────
-// Handles global error cases:
-// - 401: clears stale token; full redirect will be handled by AuthProvider (Section 2)
+// - 401: clears stale token from storage; dispatches a CustomEvent so
+//   AuthContext can synchronously reset React state without a circular import.
+//   ProtectedRoute then redirects to /auth/login on the next render.
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('auth_token')
-      // AuthProvider will detect missing token and redirect to /auth/login
+      clearToken()
+      window.dispatchEvent(new CustomEvent('auth:session-expired'))
     }
     return Promise.reject(error)
   }

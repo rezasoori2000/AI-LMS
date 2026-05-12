@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using LMS.Application.Auth.Dtos;
 using Microsoft.AspNetCore.Mvc.Testing;
 
@@ -15,11 +16,19 @@ namespace LMS.Api.Tests;
 /// A new factory (and therefore a fresh in-memory store) is created per test class
 /// to avoid cross-test pollution.
 /// </summary>
-public sealed class AuthIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class AuthIntegrationTests : IClassFixture<LmsWebApplicationFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly LmsWebApplicationFactory _factory;
 
-    public AuthIntegrationTests(WebApplicationFactory<Program> factory)
+    // API serialises enums as strings — must use JsonStringEnumConverter when
+    // deserialising response bodies that contain enum fields (e.g. AuthResponse.Role).
+    private static readonly JsonSerializerOptions JsonOpts = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        Converters = { new JsonStringEnumConverter() },
+    };
+
+    public AuthIntegrationTests(LmsWebApplicationFactory factory)
     {
         _factory = factory;
     }
@@ -56,7 +65,7 @@ public sealed class AuthIntegrationTests : IClassFixture<WebApplicationFactory<P
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
-        var body = await response.Content.ReadFromJsonAsync<AuthResponse>();
+        var body = await response.Content.ReadFromJsonAsync<AuthResponse>(JsonOpts);
         Assert.NotNull(body);
         Assert.Equal("Bearer", body.TokenType);
         Assert.False(string.IsNullOrWhiteSpace(body.AccessToken));
@@ -73,7 +82,7 @@ public sealed class AuthIntegrationTests : IClassFixture<WebApplicationFactory<P
             "/api/auth/register",
             new { Email = "new2@example.com", Password = "ValidPass1!", FirstName = "Test", LastName = "User", Role = 4 });
 
-        var body = await response.Content.ReadFromJsonAsync<AuthResponse>();
+        var body = await response.Content.ReadFromJsonAsync<AuthResponse>(JsonOpts);
         Assert.NotNull(body);
         Assert.Equal("new2@example.com", body.Email);
     }
@@ -160,7 +169,7 @@ public sealed class AuthIntegrationTests : IClassFixture<WebApplicationFactory<P
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var body = await response.Content.ReadFromJsonAsync<AuthResponse>();
+        var body = await response.Content.ReadFromJsonAsync<AuthResponse>(JsonOpts);
         Assert.NotNull(body);
         Assert.Equal("Bearer", body.TokenType);
         Assert.False(string.IsNullOrWhiteSpace(body.AccessToken));

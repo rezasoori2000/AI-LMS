@@ -6,7 +6,12 @@
 
   <ItemGroup>
     <!-- Required for IOptions<T> in AuthService constructor -->
-    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.*" />
+    <!-- Required for DbSet<T> (ILmsDbContext) and async LINQ (ToListAsync, etc.)
+         used by Application services that query via ILmsDbContext.
+         Accepted pragmatic trade-off: Application is EF-aware but never creates
+         contexts, configures models, or references Infrastructure. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.*" />
   </ItemGroup>
 
   <PropertyGroup>

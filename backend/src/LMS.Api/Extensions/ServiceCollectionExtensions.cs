@@ -1,5 +1,13 @@
 using System.Text;
+using System.Text.Json.Serialization;
+using LMS.Application.Admin.Students;
 using LMS.Application.Auth;
+using LMS.Application.Content.Chapters;
+using LMS.Application.Content.Grades;
+using LMS.Application.Content.Lessons;
+using LMS.Application.Content.Questions;
+using LMS.Application.Content.Subjects;
+using LMS.Application.Parent;
 using LMS.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -18,43 +26,38 @@ public static class ServiceCollectionExtensions
         IConfiguration configuration,
         IWebHostEnvironment environment)
     {
-        services.AddControllers();
+        services.AddControllers()
+            .AddJsonOptions(options =>
+                options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
-        // ── Authentication (JWT bearer) ────────────────────────────────────────
+        // IHttpContextAccessor -- required by HttpCurrentUserService
+        services.AddHttpContextAccessor();
+
+        // -- Authentication (JWT bearer) ------------------------------------
         var jwtSettings = configuration
             .GetSection(JwtSettings.SectionName)
             .Get<JwtSettings>();
 
-        if (jwtSettings is { SecretKey.Length: >= 32 })
-        {
-            services
-                .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-                .AddJwtBearer(options =>
+        var secretKey = jwtSettings?.SecretKey ?? string.Empty;
+
+        services
+            .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    options.TokenValidationParameters = new TokenValidationParameters
-                    {
-                        ValidateIssuer           = true,
-                        ValidateAudience         = true,
-                        ValidateLifetime         = true,
-                        ValidateIssuerSigningKey  = true,
-                        ValidIssuer              = jwtSettings.Issuer,
-                        ValidAudience            = jwtSettings.Audience,
-                        IssuerSigningKey         = new SymmetricSecurityKey(
-                                                       Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
-                        // No clock-skew tolerance — tokens expire exactly at exp claim.
-                        // Increase to TimeSpan.FromMinutes(1) if distributing across
-                        // slightly-skewed clocks (e.g. multiple API instances).
-                        ClockSkew                = TimeSpan.Zero,
-                    };
-                });
-        }
-        else
-        {
-            // JWT secret not configured (test/bootstrap environment).
-            // Authentication middleware is registered but no scheme is active;
-            // [Authorize] endpoints will return 401 until Jwt:SecretKey is supplied.
-            services.AddAuthentication();
-        }
+                    ValidateIssuer           = secretKey.Length >= 32,
+                    ValidateAudience         = secretKey.Length >= 32,
+                    ValidateLifetime         = secretKey.Length >= 32,
+                    ValidateIssuerSigningKey  = secretKey.Length >= 32,
+                    ValidIssuer              = jwtSettings?.Issuer ?? string.Empty,
+                    ValidAudience            = jwtSettings?.Audience ?? string.Empty,
+                    IssuerSigningKey         = secretKey.Length >= 32
+                        ? new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
+                        : new SymmetricSecurityKey(new byte[32]),
+                    ClockSkew                = TimeSpan.Zero,
+                };
+            });
 
         services.AddAuthorization();
 
@@ -122,15 +125,22 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Registers Application layer services (MediatR, validators, etc.).
-    /// Deferred to Phase 2.
+    /// Registers Application layer services.
     /// </summary>
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
-        // TODO (Phase 2): Register MediatR and FluentValidation pipeline behaviors
-        // services.AddMediatR(cfg =>
-        //     cfg.RegisterServicesFromAssembly(typeof(IApplicationAssemblyMarker).Assembly));
-        // services.AddValidatorsFromAssembly(typeof(IApplicationAssemblyMarker).Assembly);
+        // ── Admin content services ────────────────────────────────────────
+        services.AddScoped<IGradeService,   GradeService>();
+        services.AddScoped<ISubjectService, SubjectService>();
+        services.AddScoped<IChapterService, ChapterService>();
+        services.AddScoped<ILessonService,  LessonService>();
+        services.AddScoped<IQuestionService, QuestionService>();
+
+        // ── Admin student linkage services ────────────────────────────────
+        services.AddScoped<IStudentAdminService, StudentAdminService>();
+
+        // ── Parent portal services ────────────────────────────────────────
+        services.AddScoped<IParentService, ParentService>();
 
         return services;
     }

@@ -1,20 +1,30 @@
+import { useNavigate }   from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { PageContainer } from '@/components/layout/PageContainer'
-import { StatCard, SectionCard, PlaceholderRow } from '@/components/ui'
+import { PageContainer }  from '@/components/layout/PageContainer'
+import { StateWrapper }   from '@/components/feedback'
+import { StatCard, SectionCard, PlaceholderRow, Button } from '@/components/ui'
+import { useMyChildren }  from '@/features/parent/hooks/useParent'
 
 /**
- * Parent Dashboard — placeholder composition.
+ * Parent Dashboard — live Children Overview + stat row.
  *
- * Sections mirror the product areas Phase 2+ will make functional:
- *   - Children Overview  (per-child progress summary)
- *   - Weekly Schedule    (upcoming lessons for all children)
- *   - Recent Lessons     (latest activity across children)
- *   - Reminders & Alerts (notices, due dates, meetings)
+ * Connected sections (Phase 1, Section 6):
+ *   - Stat row: children count and total lessons completed from the API
+ *   - Children Overview: real children list with quick navigate to detail
  *
- * Phase 2: replace PlaceholderRow lists with real API-driven components.
+ * Placeholder sections (Phase 2):
+ *   - Weekly Schedule    (requires scheduling/timetable feature)
+ *   - Recent Lessons     (requires activity feed feature)
+ *   - Reminders & Alerts (requires notification feature)
  */
 export default function ParentDashboardPage() {
-  const { t } = useTranslation()
+  const { t }    = useTranslation()
+  const navigate = useNavigate()
+
+  const { data: children, isLoading, isError, refetch } = useMyChildren()
+
+  const childrenCount          = children?.length ?? 0
+  const totalLessonsCompleted  = children?.reduce((sum, c) => sum + c.lessonsCompleted, 0) ?? 0
 
   return (
     <PageContainer
@@ -24,21 +34,70 @@ export default function ParentDashboardPage() {
       <div className="space-y-6">
         {/* ── Stat row ──────────────────────────────────────────────────── */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard label={t('dashboards.parent.stats.children')}         value="—" />
-          <StatCard label={t('dashboards.parent.stats.lessonsCompleted')} value="—" />
-          <StatCard label={t('dashboards.parent.stats.weeklyTime')}       value="—" />
-          <StatCard label={t('dashboards.parent.stats.overallProgress')}  value="—" />
+          <StatCard
+            label={t('dashboards.parent.stats.children')}
+            value={isLoading ? '…' : String(childrenCount)}
+          />
+          <StatCard
+            label={t('dashboards.parent.stats.lessonsCompleted')}
+            value={isLoading ? '…' : String(totalLessonsCompleted)}
+          />
+          <StatCard label={t('dashboards.parent.stats.weeklyTime')}      value="—" />
+          <StatCard label={t('dashboards.parent.stats.overallProgress')} value="—" />
         </div>
 
         {/* ── Children Overview + Schedule row ─────────────────────────── */}
         <div className="grid gap-4 md:grid-cols-2">
           <SectionCard
             title={t('dashboards.parent.sections.childrenOverview')}
-            description="Progress summary per child"
+            description={t('dashboards.parent.sections.childrenOverviewDesc')}
+            action={
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/parent/children')}
+              >
+                {t('parent.children.viewAll')}
+              </Button>
+            }
           >
-            <PlaceholderRow label="Ahmed" meta="Grade 7 · Mathematics focus" accent="brand"   tag="child" />
-            <PlaceholderRow label="Layla" meta="Grade 5 · English focus"     accent="info"    tag="child" />
-            <PlaceholderRow label="Omar"  meta="Grade 3 · Science focus"     accent="success" tag="child" />
+            <StateWrapper
+              isLoading={isLoading}
+              isError={isError}
+              isEmpty={!children?.length}
+              emptyTitle={t('parent.children.empty')}
+              emptyDescription={t('parent.children.emptyDescription')}
+              onRetry={refetch}
+            >
+              <ul className="-mx-5 -mb-4 divide-y divide-stroke" role="list">
+                {children?.map(child => (
+                  <li
+                    key={child.studentId}
+                    className="flex cursor-pointer items-center gap-3 px-5 py-3 hover:bg-surface-raised transition-colors"
+                    onClick={() => navigate(`/parent/children/${child.studentId}`)}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="flex h-7 w-7 shrink-0 select-none items-center justify-center rounded-full bg-brand-100 text-xs font-bold uppercase text-brand-700"
+                    >
+                      {child.fullName.charAt(0)}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-content-primary">
+                        {child.fullName}
+                      </p>
+                      <p className="text-xs text-content-secondary">
+                        {child.gradeName ?? '—'}
+                        {' · '}
+                        {child.activeEnrollments} {t('parent.children.enrollments')}
+                        {' · '}
+                        {child.lessonsCompleted} {t('parent.children.lessonsCompleted')}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </StateWrapper>
           </SectionCard>
 
           <SectionCard
@@ -75,3 +134,4 @@ export default function ParentDashboardPage() {
     </PageContainer>
   )
 }
+

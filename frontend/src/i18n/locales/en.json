@@ -25,6 +25,11 @@
     "students": "Students",
     "courses": "Courses",
     "children": "Children",
+    "grades": "Grades",
+    "subjects": "Subjects",
+    "chapters": "Chapters",
+    "lessonsMgmt": "Lessons",
+    "questions": "Questions",
     "adminDashboard": "Admin",
     "teacherDashboard": "Teacher",
     "parentDashboard": "Parent",
@@ -39,6 +44,7 @@
   "common": {
     "loading": "Loading...",
     "save": "Save",
+    "saving": "Saving…",
     "cancel": "Cancel",
     "delete": "Delete",
     "edit": "Edit",
@@ -47,21 +53,59 @@
     "submit": "Submit",
     "confirm": "Confirm",
     "search": "Search",
+    "true": "True",
+    "false": "False",
     "noResults": "No results found.",
     "required": "This field is required.",
+    "actions": "Actions",
     "tryAgain": "Try again",
     "comingSoon": "Coming in a future phase.",
     "somethingWentWrong": "Something went wrong",
     "nothingHereYet": "Nothing here yet",
-    "anErrorOccurred": "An unexpected error occurred. Please try again."
+    "anErrorOccurred": "An unexpected error occurred. Please try again.",
+    "networkError": "Unable to reach the server. Please check your connection.",
+    "sessionExpired": "Your session has expired. Please log in again."
   },
   "auth": {
     "login": "Log in",
-    "register": "Register",
+    "loggingIn": "Logging in…",
+    "register": "Create account",
+    "registering": "Creating account…",
     "email": "Email address",
     "password": "Password",
+    "confirmPassword": "Confirm password",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "role": "Role",
     "forgotPassword": "Forgot password?",
-    "logout": "Log out"
+    "logout": "Log out",
+    "noAccount": "Don't have an account?",
+    "alreadyHaveAccount": "Already have an account?",
+    "loginSuccess": "Logged in successfully.",
+    "registerSuccess": "Account created successfully.",
+    "loginFailed": "Invalid email or password.",
+    "registerFailed": "Registration failed. Please try again.",
+    "emailAlreadyRegistered": "An account with this email address already exists.",
+    "sessionExpired": "Your session has expired. Please log in again.",
+    "validation": {
+      "emailRequired": "Email address is required.",
+      "emailInvalid": "Please enter a valid email address.",
+      "passwordRequired": "Password is required.",
+      "passwordMinLength": "Password must be at least 8 characters.",
+      "confirmPasswordRequired": "Please confirm your password.",
+      "passwordsNoMatch": "Passwords do not match.",
+      "firstNameRequired": "First name is required.",
+      "lastNameRequired": "Last name is required.",
+      "roleRequired": "Please select a role."
+    },
+    "roles": {
+      "Student": "Student",
+      "Parent": "Parent",
+      "Teacher": "Teacher",
+      "TenantAdmin": "Tenant Admin",
+      "ContentEditor": "Content Editor",
+      "SuperAdmin": "Super Admin"
+    }
   },
   "dashboards": {
     "admin": {
@@ -109,6 +153,7 @@
       },
       "sections": {
         "childrenOverview": "Children Overview",
+        "childrenOverviewDesc": "Progress summary per child",
         "weeklySchedule": "Weekly Schedule",
         "recentLessons": "Recent Lessons",
         "reminders": "Reminders & Alerts"
@@ -130,6 +175,178 @@
         "myProgress": "My Progress",
         "myGoals": "My Goals"
       }
+    }
+  },
+  "admin": {
+    "content": {
+      "grades": {
+        "title": "Grades",
+        "description": "Manage grade levels in the curriculum",
+        "new": "New Grade",
+        "createTitle": "Add Grade",
+        "editTitle": "Edit Grade",
+        "name": "Grade name",
+        "level": "Level",
+        "levelHelper": "Numeric position (e.g. 1, 2, 3)",
+        "empty": "No grades yet",
+        "emptyDescription": "Create the first grade level to get started."
+      },
+      "subjects": {
+        "title": "Subjects",
+        "description": "Manage subjects available in the curriculum",
+        "new": "New Subject",
+        "createTitle": "Add Subject",
+        "editTitle": "Edit Subject",
+        "name": "Subject name",
+        "slug": "Slug",
+        "slugHelper": "URL-friendly identifier — lowercase letters, numbers, and hyphens only (e.g. mathematics)",
+        "descriptionLabel": "Description",
+        "empty": "No subjects yet",
+        "emptyDescription": "Create the first subject to get started."
+      },
+      "chapters": {
+        "title": "Chapters",
+        "description": "Manage chapters grouped by subject and grade",
+        "new": "New Chapter",
+        "createTitle": "Add Chapter",
+        "editTitle": "Edit Chapter",
+        "titleField": "Chapter title",
+        "order": "Order",
+        "orderHelper": "Position within this subject and grade (e.g. 1, 2, 3)",
+        "descriptionLabel": "Description",
+        "subject": "Subject",
+        "grade": "Grade",
+        "selectSubject": "Select a subject",
+        "selectGrade": "Select a grade",
+        "empty": "No chapters yet",
+        "emptyDescription": "Create the first chapter to get started."
+      },
+      "lessons": {
+        "title": "Lessons",
+        "description": "Manage lessons within chapters",
+        "new": "New Lesson",
+        "createTitle": "Add Lesson",
+        "editTitle": "Edit Lesson",
+        "titleField": "Lesson title",
+        "order": "Order",
+        "orderHelper": "Position within this chapter (e.g. 1, 2, 3)",
+        "content": "Content (Markdown)",
+        "contentHelper": "Lesson body in Markdown format. Rich editor coming in Phase 3.",
+        "estimatedMinutes": "Duration (minutes)",
+        "chapter": "Chapter",
+        "selectChapter": "Select a chapter",
+        "minutesShort": "min",
+        "questions": "Questions",
+        "empty": "No lessons yet",
+        "emptyDescription": "Create the first lesson to get started."
+      },
+      "questions": {
+        "title": "Question Bank",
+        "description": "Manage questions across all lessons",
+        "new": "New Question",
+        "createTitle": "Add Question",
+        "editTitle": "Edit Question",
+        "filteringByLesson": "Showing questions for lesson",
+        "viewAll": "View all questions",
+        "attachedToLesson": "Attached to a lesson",
+        "standaloneBankItem": "Standalone bank question",
+        "lesson": "Assign to lesson",
+        "noLesson": "None — standalone bank question",
+        "lessonHelper": "Optional. Leave blank to add this question to the standalone bank.",
+        "typeLabel": "Question type",
+        "selectType": "Select a type",
+        "difficultyLabel": "Difficulty",
+        "selectDifficulty": "Select a difficulty",
+        "textLabel": "Question text",
+        "textPlaceholder": "Enter the question here…",
+        "options": "Answer options",
+        "option": "Option",
+        "correctOption": "Correct option",
+        "selectCorrect": "Select the correct answer",
+        "correctAnswer": "Correct answer",
+        "sampleAnswer": "Sample / reference answer",
+        "sampleAnswerHelper": "Used by the AI tutor as a reference. Students are not shown this.",
+        "empty": "No questions yet",
+        "emptyDescription": "Add the first question to the bank to get started.",
+        "emptyLessonDescription": "No questions are attached to this lesson yet.",
+        "types": {
+          "MultipleChoice": "Multiple Choice",
+          "TrueFalse": "True / False",
+          "ShortAnswer": "Short Answer"
+        },
+        "difficulty": {
+          "Easy": "Easy",
+          "Medium": "Medium",
+          "Hard": "Hard"
+        }
+      },
+      "validation": {
+        "nameRequired": "Name is required.",
+        "levelRequired": "Level is required.",
+        "levelInvalid": "Level must be a positive whole number.",
+        "slugRequired": "Slug is required.",
+        "slugInvalid": "Slug must contain only lowercase letters, numbers, and hyphens.",
+        "titleRequired": "Title is required.",
+        "orderRequired": "Order is required.",
+        "orderInvalid": "Order must be a positive whole number.",
+        "subjectRequired": "Please select a subject.",
+        "gradeRequired": "Please select a grade.",
+        "chapterRequired": "Please select a chapter.",
+        "estimatedMinutesInvalid": "Duration must be a positive whole number.",
+        "questionTextRequired": "Question text is required.",
+        "questionTypeRequired": "Please select a question type.",
+        "questionDifficultyRequired": "Please select a difficulty level.",
+        "questionOptionsRequired": "All four options are required for multiple choice questions.",
+        "questionCorrectAnswerRequired": "Please specify the correct answer."
+      }
+    },
+    "students": {
+      "title": "Student Linkage",
+      "description": "Assign students to their parent or guardian accounts",
+      "empty": "No students yet",
+      "emptyDescription": "Register student accounts to manage their parent links here.",
+      "colStudent": "Student",
+      "colGrade": "Grade",
+      "colParent": "Parent / Guardian",
+      "unlinked": "Unlinked",
+      "noGrade": "No grade",
+      "assignParent": "Assign parent",
+      "changeParent": "Change parent",
+      "selectParent": "Select a parent",
+      "noParent": "None — remove link"
+    }
+  },
+  "parent": {
+    "children": {
+      "title": "My Children",
+      "description": "Overview of your linked students",
+      "empty": "No children linked yet",
+      "emptyDescription": "Ask your administrator to link your children to your account.",
+      "viewDetails": "View details",
+      "viewAll": "View all",
+      "noGrade": "No grade assigned",
+      "enrollments": "enrollments",
+      "lessonsCompleted": "lessons completed",
+      "lastActive": "Last active",
+      "neverActive": "No activity yet"
+    },
+    "childDetail": {
+      "title": "Child Detail",
+      "back": "Back to children",
+      "grade": "Grade",
+      "enrollments": "Enrollments",
+      "noEnrollments": "This child has no enrollments yet.",
+      "enrolledOn": "Enrolled",
+      "totalLessons": "total",
+      "completed": "completed",
+      "inProgress": "in progress",
+      "averageScore": "Avg. score",
+      "notScored": "—"
+    },
+    "enrollmentStatus": {
+      "Active": "Active",
+      "Completed": "Completed",
+      "Dropped": "Dropped"
     }
   }
 }

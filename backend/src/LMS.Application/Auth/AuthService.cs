@@ -1,6 +1,8 @@
 using LMS.Application.Auth.Dtos;
 using LMS.Application.Common.Interfaces;
+using LMS.Domain.Students;
 using LMS.Domain.Users;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace LMS.Application.Auth;
@@ -18,21 +20,30 @@ namespace LMS.Application.Auth;
 /// These are intentionally separate exception types so the middleware can map
 /// them to the correct HTTP status codes (409 / 401) without any business-logic
 /// coupling in the API layer.
+///
+/// Profile creation policy (Phase 1):
+///   - Role == Parent → a ParentProfile row is created in the same transaction.
+///     This ensures the parent portal has a valid access anchor the moment the
+///     user logs in, even before any students are linked.
+///   - Other roles → no profile row is created at registration time.
 /// </summary>
 public sealed class AuthService : IAuthService
 {
     private readonly IUserRepository  _users;
+    private readonly ILmsDbContext    _db;
     private readonly IPasswordHasher  _hasher;
     private readonly ITokenService    _tokens;
     private readonly JwtSettings      _jwtSettings;
 
     public AuthService(
-        IUserRepository  users,
-        IPasswordHasher  hasher,
-        ITokenService    tokens,
+        IUserRepository       users,
+        ILmsDbContext         db,
+        IPasswordHasher       hasher,
+        ITokenService         tokens,
         IOptions<JwtSettings> jwtOptions)
     {
         _users       = users;
+        _db          = db;
         _hasher      = hasher;
         _tokens      = tokens;
         _jwtSettings = jwtOptions.Value;
@@ -60,11 +71,28 @@ public sealed class AuthService : IAuthService
             firstName:    request.FirstName,
             lastName:     request.LastName);
 
-        // 4. Persist
+        // 4. Persist the user first so its Id is available for profile creation
         await _users.AddAsync(user, ct);
         await _users.SaveChangesAsync(ct);
 
-        // 5. Issue token and return
+        // 5. If registering as a Parent, create the ParentProfile in the same logical
+        //    transaction (separate SaveChanges call is acceptable here — the User row
+        //    already exists, and a missing ParentProfile is recoverable by an admin).
+        //    Guard against duplicate creation in case of retry.
+        if (request.Role == UserRole.Parent)
+        {
+            var alreadyExists = await _db.ParentProfiles
+                .AnyAsync(p => p.UserId == user.Id, ct);
+
+            if (!alreadyExists)
+            {
+                var profile = ParentProfile.Create(user.Id, request.TenantId);
+                _db.ParentProfiles.Add(profile);
+                await _db.SaveChangesAsync(ct);
+            }
+        }
+
+        // 6. Issue token and return
         return BuildResponse(user);
     }
 

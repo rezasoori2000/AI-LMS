@@ -21,6 +21,51 @@ export interface User {
   tenantId: string
   locale: string
 }
+
+// ── Auth payloads & responses ────────────────────────────────
+
+/** Integer values match the backend UserRole enum order. */
+export const BackendUserRole = {
+  SuperAdmin:    0,
+  TenantAdmin:   1,
+  ContentEditor: 2,
+  Teacher:       3,
+  Parent:        4,
+  Student:       5,
+} as const
+export type BackendUserRoleValue = (typeof BackendUserRole)[keyof typeof BackendUserRole]
+
+export interface LoginPayload {
+  email: string
+  password: string
+}
+
+export interface RegisterPayload {
+  email: string
+  password: string
+  firstName: string
+  lastName: string
+  /** Integer matching BackendUserRole. */
+  role: BackendUserRoleValue
+  tenantId?: string | null
+}
+
+/** Matches the JSON shape returned by POST /api/auth/login and /api/auth/register. */
+export interface AuthApiResponse {
+  accessToken: string
+  tokenType: string
+  expiresIn: number
+  userId: string
+  email: string
+  role: BackendUserRoleValue
+  tenantId: string | null
+}
+
+/** Options shown in the self-registration role dropdown (Phase 1 scope). */
+export const REGISTER_ROLE_OPTIONS: Array<{ value: BackendUserRoleValue; labelKey: string }> = [
+  { value: BackendUserRole.Student, labelKey: 'auth.roles.Student' },
+  { value: BackendUserRole.Parent,  labelKey: 'auth.roles.Parent'  },
+]
 // ── Navigation ──────────────────────────────────────────────
 
 /**

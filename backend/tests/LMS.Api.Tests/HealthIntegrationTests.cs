@@ -7,8 +7,8 @@ namespace LMS.Api.Tests;
 /// <see cref="WebApplicationFactory{TEntryPoint}"/> spins up the full ASP.NET Core
 /// pipeline in-memory so these tests exercise middleware, DI, and routing together.
 /// </summary>
-public class HealthIntegrationTests(WebApplicationFactory<Program> factory)
-    : IClassFixture<WebApplicationFactory<Program>>
+public class HealthIntegrationTests(LmsWebApplicationFactory factory)
+    : IClassFixture<LmsWebApplicationFactory>
 {
     [Fact]
     public async Task Health_Returns200()

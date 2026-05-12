@@ -1,5 +1,6 @@
-import { useMatches } from 'react-router-dom'
+import { useMatches, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { useAuth } from '@/context/AuthContext'
 import type { RouteHandle } from '@/routes/types'
 
 interface TopbarProps {
@@ -24,10 +25,17 @@ interface TopbarProps {
  * trailing edge in both LTR and RTL.
  */
 export function Topbar({ onMenuClick, isMenuOpen }: TopbarProps) {
-  const { t } = useTranslation()
-  const matches = useMatches()
+  const { t }              = useTranslation()
+  const matches            = useMatches()
+  const { user, isAuthenticated, signOut } = useAuth()
+  const navigate           = useNavigate()
   const handle = matches.slice(-1)[0]?.handle as RouteHandle | undefined
   const pageTitle = handle?.titleKey ? t(handle.titleKey) : null
+
+  function handleSignOut() {
+    signOut()
+    navigate('/auth/login', { replace: true })
+  }
 
   return (
     <header
@@ -89,15 +97,40 @@ export function Topbar({ onMenuClick, isMenuOpen }: TopbarProps) {
         </span>
       )}
 
-      {/* Trailing actions — Phase 2: notifications, language switcher, user menu */}
+      {/* Trailing actions */}
       <div className="ms-auto flex items-center gap-2">
-        <div
-          aria-hidden="true"
-          title="Sign in — coming in Section 2"
-          className="flex h-8 w-8 cursor-default items-center justify-center rounded-full bg-brand-100 text-brand-700 text-xs font-semibold select-none"
-        >
-          ?
-        </div>
+        {isAuthenticated && user ? (
+          <>
+            {/* User avatar — first letter of email */}
+            <div
+              aria-hidden="true"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-white text-xs font-semibold select-none"
+              title={user.email}
+            >
+              {user.email[0].toUpperCase()}
+            </div>
+            {/* Logout button */}
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className={[
+                'rounded-md px-3 py-1.5 text-xs font-medium text-content-secondary',
+                'hover:bg-surface-overlay hover:text-content-primary',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
+                'transition-colors duration-150',
+              ].join(' ')}
+            >
+              {t('auth.logout')}
+            </button>
+          </>
+        ) : (
+          <div
+            aria-hidden="true"
+            className="flex h-8 w-8 cursor-default items-center justify-center rounded-full bg-brand-100 text-brand-700 text-xs font-semibold select-none"
+          >
+            ?
+          </div>
+        )}
       </div>
     </header>
   )

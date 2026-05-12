@@ -12,6 +12,9 @@ var app = builder.Build();
 
 app.UseApiPipeline(builder.Environment);
 
+// Seed development data (applies pending migrations first; idempotent; dev-only).
+await app.SeedDatabaseAsync();
+
 app.Run();
 
 // Expose Program to integration test projects that use WebApplicationFactory<Program>.

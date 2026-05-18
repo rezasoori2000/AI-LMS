@@ -334,6 +334,7 @@
       "title": "Child Detail",
       "back": "Back to children",
       "grade": "Grade",
+      "activeEnrollments": "Active Enrollments",
       "enrollments": "Enrollments",
       "noEnrollments": "This child has no enrollments yet.",
       "enrolledOn": "Enrolled",

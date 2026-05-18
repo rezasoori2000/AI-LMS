@@ -216,12 +216,46 @@ See [Phase 1 Section 5 Readiness Checklist](docs/development/phase1-section5-rea
 
 ---
 
+## Phase 1 — Section 6 Status
+
+**Completed:**
+- [x] `ParentService` — read-only, ownership-enforced via `ParentProfile.Id` resolved from JWT claims
+- [x] `ParentController` — `GET /api/parent/children`, `GET /api/parent/children/{studentId}`; `[Authorize(Roles = "Parent")]`
+- [x] `ParentAccessDeniedException` → 403 Forbidden (privacy-preserving; prevents student ID enumeration)
+- [x] `HttpCurrentUserService` — reads JWT `sub`/`email`/`role`/`tid` claims; fully implemented
+- [x] `StudentAdminService` + `StudentsController` — admin assigns/unlinks parent via `PATCH /api/admin/students/{id}/parent`
+- [x] `StudentsLinkPage` — admin frontend; inline parent assignment with dropdown + save/cancel
+- [x] `ParentDashboardPage` — live stat row + children overview connected to `GET /api/parent/children`
+- [x] `ChildrenPage` — full children list with grade, enrollment count, lessons completed, last activity
+- [x] `ChildDetailPage` — per-subject enrollment + progress summary (total/completed/in-progress/avg score)
+- [x] `parent.routes.tsx` — all routes carry `access: ['parent']` role gate
+- [x] i18n — full `parent.*` block; `admin.students.*` block; `common.actions` key
+- [x] **126 backend tests** (70 domain + 12 application + 44 API) · **41 frontend Vitest tests** — all passing
+
+**Deferred to Phase 2+:**
+- `ParentProfile` auto-creation on registration (admin-managed in Phase 1)
+- Parent–teacher messaging
+- Notifications (grade published, assignment due)
+- Parent invitation / self-service onboarding
+- Multi-guardian M:M linkage (`ParentStudentLink` table — Phase 3)
+- Per-lesson progress timeline and performance trend charts
+- Happy-path integration test for parent with linked children
+- `formatLastActivity` i18n (hardcoded English in Phase 1)
+
+See [Phase 1 Section 6 Readiness Checklist](docs/development/phase1-section6-readiness.md) before starting Section 7.
+
+---
+
 ## Documentation
 
 ### Architecture
 - [Architecture Overview](docs/architecture/architecture-overview.md)
 - [Domain Model Overview](docs/architecture/domain-model-overview.md)
 - [Persistence and Migrations](docs/architecture/persistence-and-migrations.md)
+
+### Parent Portal
+- [Parent Portal MVP](docs/parent-portal-mvp.md)
+- [Parent–Student Linkage Notes](docs/parent-student-linkage-notes.md)
 
 ### Development
 - [Local Development Guide](docs/development/local-development.md)
@@ -232,6 +266,7 @@ See [Phase 1 Section 5 Readiness Checklist](docs/development/phase1-section5-rea
 - [Phase 1 Section 3 Readiness Checklist](docs/development/phase1-section3-readiness.md)
 - [Phase 1 Section 4 Readiness Checklist](docs/development/phase1-section4-readiness.md)
 - [Phase 1 Section 5 Readiness Checklist](docs/development/phase1-section5-readiness.md)
+- [Phase 1 Section 6 Readiness Checklist](docs/development/phase1-section6-readiness.md)
 
 ### Frontend
 - [Frontend UI Foundation](docs/frontend/ui-foundation.md)

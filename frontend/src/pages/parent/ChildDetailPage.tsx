@@ -135,9 +135,8 @@ export default function ChildDetailPage() {
               value={summary?.gradeName ?? '—'}
             />
             <StatCard
-              label={t('dashboards.parent.stats.children')}
+              label={t('parent.childDetail.activeEnrollments')}
               value={summary?.activeEnrollments ?? '—'}
-              subLabel={t('parent.children.enrollments')}
             />
             <StatCard
               label={t('dashboards.parent.stats.lessonsCompleted')}

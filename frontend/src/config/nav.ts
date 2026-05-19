@@ -106,12 +106,12 @@ export const NAV_ITEMS_BY_ROLE: Record<UserRole, NavItem[]> = {
   ],
 
   student: [
-    { key: 'dashboard', labelKey: 'nav.dashboard', href: '/student',
+    { key: 'dashboard', labelKey: 'nav.dashboard',  href: '/student',
       allowedRoles: ['student'] },
-    { key: 'lessons',  labelKey: 'nav.lessons',   href: '/student/lessons',
+    { key: 'subjects',  labelKey: 'nav.mySubjects', href: '/student/subjects',
       sectionTitleKey: 'nav.groups.learning',
       allowedRoles: ['student'] },
-    { key: 'progress', labelKey: 'nav.progress',  href: '/student/progress',
+    { key: 'progress',  labelKey: 'nav.progress',   href: '/student/progress',
       allowedRoles: ['student'] },
   ],
 }

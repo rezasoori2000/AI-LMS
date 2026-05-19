@@ -97,9 +97,11 @@ internal sealed class FakeDbContextForAuth : ILmsDbContext
     public DbSet<Chapter>        Chapters        => throw new NotImplementedException();
     public DbSet<Lesson>         Lessons         => throw new NotImplementedException();
     public DbSet<Question>       Questions       => throw new NotImplementedException();
-    public DbSet<StudentProfile> StudentProfiles => throw new NotImplementedException();
-    public DbSet<Enrollment>     Enrollments     => throw new NotImplementedException();
-    public DbSet<LessonProgress> LessonProgress  => throw new NotImplementedException();
+    public DbSet<StudentProfile>           StudentProfiles           => throw new NotImplementedException();
+    public DbSet<TeacherStudentAssignment> TeacherStudentAssignments => throw new NotImplementedException();
+    public DbSet<Enrollment>               Enrollments               => throw new NotImplementedException();
+    public DbSet<LessonProgress>        LessonProgress        => throw new NotImplementedException();
+    public DbSet<QuestionAnswerRecord>   QuestionAnswerRecords => throw new NotImplementedException();
     public DbSet<AiConversation> AiConversations => throw new NotImplementedException();
     public DbSet<AiMessage>      AiMessages      => throw new NotImplementedException();
 

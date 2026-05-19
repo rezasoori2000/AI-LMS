@@ -42,6 +42,9 @@ internal sealed class StudentProfileConfiguration : IEntityTypeConfiguration<Stu
                .OnDelete(DeleteBehavior.SetNull)
                .HasConstraintName("fk_student_profiles_parent");
 
+        // Teacher linkage is managed via TeacherStudentAssignment M:M join table.
+        // See TeacherStudentAssignmentConfiguration for FK and index definitions.
+
         builder.HasIndex(s => s.TenantId)
                .HasDatabaseName("ix_student_profiles_tenant_id");
 

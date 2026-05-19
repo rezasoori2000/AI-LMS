@@ -13,6 +13,10 @@ namespace LMS.Domain.Conversations;
 /// - LessonId is optional: the student may open the AI chat outside any lesson context.
 /// - AiMessage is a child entity of this aggregate. Always add messages via AddMessage()
 ///   so the aggregate enforces the "no messages after End()" invariant.
+/// - Identity anchor: StudentId is a FK to StudentProfile.Id. When Phase 3 builds the
+///   AI context assembly service, always traverse to the durable User.Id via
+///   StudentProfile.UserId — do not treat StudentProfile.Id as a long-term identity key.
+///   A denormalized UserId column may be added to this table in Phase 3 for query efficiency.
 /// - Phase 3: add model name, system-prompt version, total token usage, conversation
 ///   rating (student feedback 1–5), teacher review flag, and moderation status.
 /// </summary>

@@ -28,6 +28,7 @@
     "grades": "Grades",
     "subjects": "Subjects",
     "chapters": "Chapters",
+    "mySubjects": "My Subjects",
     "lessonsMgmt": "Lessons",
     "questions": "Questions",
     "adminDashboard": "Admin",
@@ -50,6 +51,7 @@
     "edit": "Edit",
     "back": "Back",
     "next": "Next",
+    "continue": "Continue",
     "submit": "Submit",
     "confirm": "Confirm",
     "search": "Search",
@@ -127,19 +129,11 @@
     },
     "teacher": {
       "title": "Teacher Dashboard",
-      "description": "Manage your classes and track student progress",
+      "description": "Overview of your assigned students",
       "stats": {
-        "students": "My Students",
-        "lessons": "Published Lessons",
-        "assignments": "Open Assignments",
-        "avgScore": "Avg. Score"
-      },
-      "sections": {
-        "myClasses": "My Classes",
-        "upcomingLessons": "Upcoming Lessons",
-        "flaggedLearners": "Flagged Learners",
-        "openAssignments": "Open Assignments",
-        "recentSubmissions": "Recent Submissions"
+        "students": "Assigned Students",
+        "activeEnrollments": "Active Enrollments",
+        "completedThisWeek": "Completed This Week"
       }
     },
     "parent": {
@@ -163,17 +157,26 @@
       "title": "Student Dashboard",
       "description": "Your lessons and learning journey",
       "stats": {
-        "streak": "Day Streak",
+        "activeEnrollments": "Active Enrollments",
         "lessonsCompleted": "Lessons Completed",
+        "inProgressLessons": "In Progress",
+        "overallProgress": "Overall Progress",
+        "streak": "Day Streak",
         "points": "Points Earned",
         "level": "Current Level"
       },
       "sections": {
         "continueLearning": "Continue Learning",
+        "continueLearningEmpty": "No pending lessons right now. Check your subjects for newly published content.",
         "aiTutor": "AI Tutor",
         "mySubjects": "My Subjects",
         "myProgress": "My Progress",
         "myGoals": "My Goals"
+      },
+      "progress": {
+        "NotStarted": "Not Started",
+        "InProgress": "In Progress",
+        "Completed": "Completed"
       }
     }
   },
@@ -302,18 +305,72 @@
     },
     "students": {
       "title": "Student Linkage",
-      "description": "Assign students to their parent or guardian accounts",
+      "description": "Assign students to their parent or guardian accounts and classroom teachers",
       "empty": "No students yet",
       "emptyDescription": "Register student accounts to manage their parent links here.",
       "colStudent": "Student",
       "colGrade": "Grade",
       "colParent": "Parent / Guardian",
+      "colTeacher": "Teacher",
       "unlinked": "Unlinked",
+      "unassignedTeacher": "No Teacher",
       "noGrade": "No grade",
       "assignParent": "Assign parent",
       "changeParent": "Change parent",
       "selectParent": "Select a parent",
-      "noParent": "None — remove link"
+      "noParent": "None — remove link",
+      "assignTeacher": "Assign teacher",
+      "changeTeacher": "Change teacher",
+      "selectTeacher": "Select a teacher",
+      "noTeacher": "None — remove assignment"
+    }
+  },
+  "teacher": {
+    "students": {
+      "title": "My Students",
+      "description": "Students assigned to you by the administrator",
+      "empty": "No students assigned yet",
+      "emptyDescription": "Ask your administrator to assign students to your account.",
+      "viewAll": "View all",
+      "viewDetails": "View details",
+      "noGrade": "No grade assigned",
+      "enrollments": "enrollments",
+      "lessonsCompleted": "lessons completed"
+    },
+    "studentDetail": {
+      "title": "Student Detail",
+      "back": "Back to students",
+      "grade": "Grade",
+      "email": "Email",
+      "activeEnrollments": "Active Enrollments",
+      "totalCompleted": "Lessons Completed",
+      "enrollments": "Enrollments",
+      "enrollmentsDesc": "Subject-level breakdown with lesson counts",
+      "noEnrollments": "This student has no enrollments yet.",
+      "enrolledOn": "Enrolled",
+      "totalLessons": "total",
+      "completed": "completed",
+      "inProgress": "in progress",
+      "lastActivity": "Last active",
+      "lessonProgress": "Lesson Progress",
+      "lessonProgressDesc": "Lesson-level detail across active enrollments",
+      "noProgress": "No lesson activity yet",
+      "noProgressDesc": "Progress will appear once this student starts a lesson.",
+      "completedOn": "Completed",
+      "tab": {
+        "enrollments": "Enrollments",
+        "progress": "Progress"
+      }
+    },
+    "enrollmentStatus": {
+      "Active": "Active",
+      "Completed": "Completed",
+      "Dropped": "Dropped"
+    },
+    "progressStatus": {
+      "NotStarted": "Not Started",
+      "InProgress": "In Progress",
+      "Completed": "Completed"
     }
   },
   "parent": {

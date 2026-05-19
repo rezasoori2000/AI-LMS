@@ -17,7 +17,9 @@ namespace LMS.Domain.Students;
 /// - Phase 1: one student ↔ one parent (1:1 via ParentId FK).
 ///   Phase 3: introduce a ParentStudentLink join table for M:M (step-parents,
 ///   divorced families, shared custody, multiple guardian scenarios).
-/// - Phase 3: add class/room assignment, TeacherId, learning-profile settings.
+/// - Teacher linkage uses M:M via <see cref="TeacherStudentAssignment"/>.
+///   Phase 1 admin convention: at most one teacher per student (enforced in application layer).
+///   Phase 3: co-teaching, subject-specific teachers, intervention ownership.
 /// </summary>
 public sealed class StudentProfile : AuditableEntity
 {
@@ -44,6 +46,9 @@ public sealed class StudentProfile : AuditableEntity
     public User           User   { get; private set; } = null!;
     public Grade?         Grade  { get; private set; }
     public ParentProfile? Parent { get; private set; }
+
+    /// <summary>Teacher assignments for this student. Phase 1: at most one entry by convention.</summary>
+    public ICollection<TeacherStudentAssignment> TeacherAssignments { get; private set; } = [];
 
     public static StudentProfile Create(
         Guid      userId,
@@ -95,4 +100,5 @@ public sealed class StudentProfile : AuditableEntity
         ParentId  = null;
         UpdatedAt = DateTime.UtcNow;
     }
+
 }

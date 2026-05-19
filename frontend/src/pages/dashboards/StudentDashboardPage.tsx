@@ -1,107 +1,151 @@
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { StateWrapper } from '@/components/feedback'
 import { PageContainer } from '@/components/layout/PageContainer'
-import { StatCard, SectionCard, PlaceholderRow, Badge } from '@/components/ui'
+import { Badge, Button, SectionCard, StatCard } from '@/components/ui'
+import { useStudentEnrollments, useStudentSummary } from '@/features/student/hooks/useStudent'
 
-/**
- * Student Dashboard — placeholder composition.
- *
- * Sections mirror the product areas Phase 2+ will make functional:
- *   - Continue Learning  (lesson queue, resume in-progress lessons)
- *   - AI Tutor          (conversational AI assistant)
- *   - My Subjects       (enrolled courses + current grade)
- *   - My Progress       (completion tracking, streaks, skill milestones)
- *   - My Goals          (weekly targets and achievements)
- *
- * Phase 2: replace PlaceholderRow lists with real API-driven components.
- * Continue Learning becomes a lesson card queue.
- * AI Tutor becomes the chat entry point.
- */
 export default function StudentDashboardPage() {
+  const navigate = useNavigate()
   const { t } = useTranslation()
+
+  const summaryQuery = useStudentSummary()
+  const enrollmentsQuery = useStudentEnrollments()
+
+  const isLoading = summaryQuery.isLoading || enrollmentsQuery.isLoading
+  const isError = summaryQuery.isError || enrollmentsQuery.isError
+  const error = summaryQuery.error ?? enrollmentsQuery.error
+
+  const summary = summaryQuery.data
+  const enrollments = enrollmentsQuery.data ?? []
+
+  const continueLearning = enrollments
+    .filter(item => item.nextLessonId)
+    .slice(0, 3)
 
   return (
     <PageContainer
       title={t('dashboards.student.title')}
       description={t('dashboards.student.description')}
     >
-      <div className="space-y-6">
-        {/* ── Stat row ──────────────────────────────────────────────────── */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard label={t('dashboards.student.stats.streak')}           value="—" />
-          <StatCard label={t('dashboards.student.stats.lessonsCompleted')} value="—" />
-          <StatCard label={t('dashboards.student.stats.points')}           value="—" />
-          <StatCard label={t('dashboards.student.stats.level')}            value="—" />
-        </div>
+      <StateWrapper
+        isLoading={isLoading}
+        isError={isError}
+        error={error}
+        isEmpty={false}
+        onRetry={() => {
+          summaryQuery.refetch()
+          enrollmentsQuery.refetch()
+        }}
+      >
+        <div className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              label={t('dashboards.student.stats.activeEnrollments')}
+              value={summary?.activeEnrollments ?? 0}
+            />
+            <StatCard
+              label={t('dashboards.student.stats.lessonsCompleted')}
+              value={summary?.completedLessons ?? 0}
+            />
+            <StatCard
+              label={t('dashboards.student.stats.inProgressLessons')}
+              value={summary?.inProgressLessons ?? 0}
+            />
+            <StatCard
+              label={t('dashboards.student.stats.overallProgress')}
+              value={`${Math.round(summary?.overallProgressPercent ?? 0)}%`}
+            />
+          </div>
 
-        {/* ── Continue Learning (2/3) + AI Tutor (1/3) ─────────────────── */}
-        <div className="grid gap-4 lg:grid-cols-3">
-          <div className="lg:col-span-2">
+          <div className="grid gap-4 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <SectionCard
+                title={t('dashboards.student.sections.continueLearning')}
+                description="Resume from your next available lesson"
+              >
+                {!continueLearning.length ? (
+                  <p className="text-sm text-content-secondary">
+                  {t('dashboards.student.sections.continueLearningEmpty')}
+                  </p>
+                ) : (
+                  <ul role="list" className="space-y-3">
+                    {continueLearning.map(item => (
+                      <li
+                        key={item.enrollmentId}
+                        className="flex flex-wrap items-center gap-3 rounded-md border border-stroke bg-surface-raised px-4 py-3"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-content-primary">
+                            {item.subjectName}
+                          </p>
+                          <p className="mt-0.5 text-xs text-content-secondary">
+                            {item.completedLessons} of {item.totalLessons} lessons completed
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() =>
+                            navigate(`/student/subjects/${item.subjectId}/lessons/${item.nextLessonId}`)
+                          }
+                        >
+                          {t('common.continue')}
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </SectionCard>
+            </div>
+
             <SectionCard
-              title={t('dashboards.student.sections.continueLearning')}
-              description="Pick up where you left off"
-              className="h-full"
+              title={t('dashboards.student.sections.aiTutor')}
+              description="Planned integration"
             >
-              <PlaceholderRow
-                label="Mathematics — Ch. 5: Fractions"
-                meta="Lesson 4 of 8 · In progress"
-                accent="brand"
-              />
-              <PlaceholderRow
-                label="English — Reading Comprehension Unit 3"
-                meta="New assignment available"
-                accent="warning"
-              />
-              <PlaceholderRow
-                label="Science — Ecosystems & the Environment"
-                meta="Completed"
-                accent="success"
-              />
+              <p className="text-sm text-content-secondary">
+                AI tutor support is deferred to a later phase. This MVP focuses on lesson access,
+                answering, and completion tracking.
+              </p>
+              <Badge variant="info" className="mt-3">
+                Deferred
+              </Badge>
             </SectionCard>
           </div>
 
           <SectionCard
-            title={t('dashboards.student.sections.aiTutor')}
-            description="Ask your AI assistant a question"
-            className="h-full"
-          >
-            <p className="text-sm text-content-secondary">
-              The AI tutoring assistant will be available in Phase 2. You will
-              be able to ask questions about your lessons and get instant feedback.
-            </p>
-            <Badge variant="info" className="mt-3">Phase 2</Badge>
-          </SectionCard>
-        </div>
-
-        {/* ── Subjects / Progress / Goals row ──────────────────────────── */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <SectionCard
             title={t('dashboards.student.sections.mySubjects')}
-            description="Enrolled courses"
+            description="Open your enrollments and browse all available lessons"
+            action={
+              <Button size="sm" variant="secondary" onClick={() => navigate('/student/subjects')}>
+                View all subjects
+              </Button>
+            }
           >
-            <PlaceholderRow label="Mathematics" meta="Grade A"  accent="brand"   />
-            <PlaceholderRow label="English"     meta="Grade B+" accent="info"    />
-            <PlaceholderRow label="Science"     meta="Grade A−" accent="success" />
-          </SectionCard>
-
-          <SectionCard
-            title={t('dashboards.student.sections.myProgress')}
-            description="Overall learning progress"
-          >
-            <PlaceholderRow label="Overall Completion" meta="Progress charts — Phase 2" accent="brand"   />
-            <PlaceholderRow label="Streak Tracker"     meta="Daily goal — Phase 2"      accent="warning" />
-            <PlaceholderRow label="Skill Milestones"   meta="Phase 2"                   accent="info"    />
-          </SectionCard>
-
-          <SectionCard
-            title={t('dashboards.student.sections.myGoals')}
-            description="Weekly targets"
-          >
-            <PlaceholderRow label="Complete 5 lessons this week" meta="2 / 5"    accent="brand"   />
-            <PlaceholderRow label="Earn 100 points"               meta="67 / 100" accent="warning" />
-            <PlaceholderRow label="Finish Mathematics chapter"    meta="Pending"  accent="info"    />
+            {!enrollments.length ? (
+              <p className="text-sm text-content-secondary">No active enrollments yet.</p>
+            ) : (
+              <ul role="list" className="space-y-2">
+                {enrollments.slice(0, 5).map(item => (
+                  <li
+                    key={item.enrollmentId}
+                    className="flex items-center justify-between gap-3 rounded-md border border-stroke bg-surface-raised px-4 py-2"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-content-primary">{item.subjectName}</p>
+                      <p className="text-xs text-content-secondary">
+                        {item.completedLessons}/{item.totalLessons} lessons completed
+                      </p>
+                    </div>
+                    <Badge variant="info">
+                      {Math.round((item.totalLessons ? item.completedLessons / item.totalLessons : 0) * 100)}%
+                    </Badge>
+                  </li>
+                ))}
+              </ul>
+            )}
           </SectionCard>
         </div>
-      </div>
+      </StateWrapper>
     </PageContainer>
   )
 }

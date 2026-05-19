@@ -39,10 +39,12 @@ public sealed class LmsDbContext : DbContext, ILmsDbContext
     public DbSet<Chapter>        Chapters        => Set<Chapter>();
     public DbSet<Lesson>         Lessons         => Set<Lesson>();
     public DbSet<Question>       Questions       => Set<Question>();
-    public DbSet<StudentProfile> StudentProfiles => Set<StudentProfile>();
-    public DbSet<ParentProfile>  ParentProfiles  => Set<ParentProfile>();
-    public DbSet<Enrollment>     Enrollments     => Set<Enrollment>();
-    public DbSet<LessonProgress> LessonProgress  => Set<LessonProgress>();
+    public DbSet<StudentProfile>           StudentProfiles           => Set<StudentProfile>();
+    public DbSet<ParentProfile>            ParentProfiles            => Set<ParentProfile>();
+    public DbSet<TeacherStudentAssignment> TeacherStudentAssignments => Set<TeacherStudentAssignment>();
+    public DbSet<Enrollment>               Enrollments               => Set<Enrollment>();
+    public DbSet<LessonProgress>        LessonProgress        => Set<LessonProgress>();
+    public DbSet<QuestionAnswerRecord>   QuestionAnswerRecords => Set<QuestionAnswerRecord>();
     public DbSet<AiConversation> AiConversations => Set<AiConversation>();
     public DbSet<AiMessage>      AiMessages      => Set<AiMessage>();
 

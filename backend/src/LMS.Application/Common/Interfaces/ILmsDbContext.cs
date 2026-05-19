@@ -79,10 +79,12 @@ public interface ILmsDbContext
     DbSet<Chapter>        Chapters        { get; }
     DbSet<Lesson>         Lessons         { get; }
     DbSet<Question>       Questions       { get; }
-    DbSet<StudentProfile> StudentProfiles { get; }
-    DbSet<ParentProfile>  ParentProfiles  { get; }
-    DbSet<Enrollment>     Enrollments     { get; }
-    DbSet<LessonProgress> LessonProgress  { get; }
+    DbSet<StudentProfile>            StudentProfiles            { get; }
+    DbSet<ParentProfile>             ParentProfiles             { get; }
+    DbSet<TeacherStudentAssignment>  TeacherStudentAssignments  { get; }
+    DbSet<Enrollment>                Enrollments                { get; }
+    DbSet<LessonProgress>        LessonProgress        { get; }
+    DbSet<QuestionAnswerRecord>   QuestionAnswerRecords { get; }
     DbSet<AiConversation> AiConversations { get; }
     DbSet<AiMessage>      AiMessages      { get; }
 

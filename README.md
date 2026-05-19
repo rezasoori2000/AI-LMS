@@ -246,6 +246,77 @@ See [Phase 1 Section 6 Readiness Checklist](docs/development/phase1-section6-rea
 
 ---
 
+## Phase 1 — Section 7 Status
+
+**Completed:**
+- [x] `StudentService` — 6-method service: summary stats, enrolled subjects, subject chapter tree, lesson detail, start (idempotent), complete with scoring
+- [x] `StudentController` — 5 HTTP endpoints at `/api/student/*`; `[Authorize(Roles = "Student")]`
+- [x] `StudentAccessDeniedException` → 403 Forbidden (prevents resource enumeration for non-enrolled lessons)
+- [x] `LessonAlreadyCompletedException` → 409 Conflict (re-completion returns 409, not 500)
+- [x] Answer security — `CorrectAnswer` excluded from `QuestionForStudentDto` at EF Core projection level
+- [x] MC + TF auto-scoring; ShortAnswer included but always `isCorrect: false` (AI evaluation deferred)
+- [x] `LessonProgress` state machine: NotStarted → InProgress (on lesson open) → Completed (terminal)
+- [x] `StudentDashboardPage` — live stat row + continue-learning + subject preview
+- [x] `SubjectsPage` — enrolled subjects with completion % and next-lesson shortcut
+- [x] `SubjectDetailPage` — chapter-grouped lesson list with human-readable progress badges
+- [x] `LessonPlayerPage` — plain text content + question form + submit + score feedback
+- [x] `useStudent.ts` — full React Query hook set including `useStartStudentLesson` (fire-and-forget)
+- [x] **126 backend tests** · **41 frontend tests** — all passing · `tsc --noEmit` clean
+
+**Phase 1 locked decisions:**
+- Free lesson access within enrolled subjects (no sequential gating)
+- Partial answer submission allowed
+- `isCorrect` only returned — no correct-answer reveal in Phase 1
+- Plain text content rendering (no Markdown)
+- One attempt per lesson (terminal `Completed` state)
+
+**Deferred to Phase 2+:**
+- `StudentProfile` auto-creation on registration (admin-managed in Phase 1)
+- Progress page at `/student/progress`
+- Student self-enrollment
+- Sequential lesson gating / prerequisites
+- Re-attempt support (`LessonAttempt` child table — Phase 3)
+- ShortAnswer AI evaluation (Phase 3)
+- Correct-answer reveal post-completion (Phase 3)
+- Per-question answer persistence for review mode (Phase 3)
+- Gamification, AI tutoring, advanced analytics (Phase 3+)
+
+See [Phase 1 Section 7 Readiness Checklist](docs/development/phase1-section7-readiness.md) before starting Section 8.
+
+---
+
+## Phase 1 — Section 8 Status
+
+**Completed:**
+- [x] `TeacherStudentAssignment` M:M join entity — replaces 1:1 `StudentProfile.TeacherId` FK
+- [x] Migration `AddTeacherStudentAssignmentTable` — drops old FK column, creates join table with unique composite index
+- [x] `ITeacherService` + `TeacherService` — 4 read methods; ownership enforced via `TeacherStudentAssignment`
+- [x] `TeacherController` — 4 endpoints at `/api/teacher/*`; `[Authorize(Roles = "Teacher")]`
+- [x] `TeacherAccessDeniedException` → 403 Forbidden (unassigned student access returns 403, not 404)
+- [x] Admin teacher assignment API — `GET /api/admin/students/teacher-options`, `PATCH /api/admin/students/{id}/teacher`
+- [x] Admin `StudentsLinkPage` — teacher column + inline teacher assignment UI (parent + teacher in one page)
+- [x] `TeacherDashboardPage`, `StudentsPage`, `StudentMonitorPage` — full teacher portal frontend
+- [x] `teacher.routes.tsx` with `access: ['teacher']` role gate
+- [x] **139 backend tests** · **41 frontend tests** — all passing · `tsc --noEmit` clean
+- [x] Bug fix: `student-admin.service.ts` double `/api/` URL prefix corrected
+
+**Phase 1 locked decisions:**
+- Teacher portal is read-only (no teacher-initiated writes in Phase 1)
+- One teacher per student (admin-managed; join table schema supports future M:M)
+- `AssignedByUserId` stored on every assignment for audit trail
+- No `TeacherProfile` entity in Phase 1 — teacher identity is `User.Id`
+
+**Deferred to Phase 3+:**
+- `formatLastActivity` i18n in `StudentMonitorPage` (hardcoded English — same gap as parent portal)
+- `TeacherProfile` entity (bio, display name, specialisations)
+- Subject-scoped co-teaching (multiple teachers per student per subject)
+- Teacher notification on new student assignment
+- Teacher self-service for assignment requests
+
+See [Phase 1 Section 8 Readiness Checklist](docs/development/phase1-section8-readiness.md) before starting Section 9.
+
+---
+
 ## Documentation
 
 ### Architecture
@@ -253,9 +324,16 @@ See [Phase 1 Section 6 Readiness Checklist](docs/development/phase1-section6-rea
 - [Domain Model Overview](docs/architecture/domain-model-overview.md)
 - [Persistence and Migrations](docs/architecture/persistence-and-migrations.md)
 
+### Student Portal
+- [Student Portal MVP](docs/student-portal-mvp.md)
+
 ### Parent Portal
 - [Parent Portal MVP](docs/parent-portal-mvp.md)
 - [Parent–Student Linkage Notes](docs/parent-student-linkage-notes.md)
+
+### Teacher Portal
+- [Teacher Portal MVP](docs/teacher-portal-mvp.md)
+- [Teacher–Student Assignment Notes](docs/teacher-student-assignment-notes.md)
 
 ### Development
 - [Local Development Guide](docs/development/local-development.md)
@@ -267,6 +345,8 @@ See [Phase 1 Section 6 Readiness Checklist](docs/development/phase1-section6-rea
 - [Phase 1 Section 4 Readiness Checklist](docs/development/phase1-section4-readiness.md)
 - [Phase 1 Section 5 Readiness Checklist](docs/development/phase1-section5-readiness.md)
 - [Phase 1 Section 6 Readiness Checklist](docs/development/phase1-section6-readiness.md)
+- [Phase 1 Section 7 Readiness Checklist](docs/development/phase1-section7-readiness.md)
+- [Phase 1 Section 8 Readiness Checklist](docs/development/phase1-section8-readiness.md)
 
 ### Frontend
 - [Frontend UI Foundation](docs/frontend/ui-foundation.md)

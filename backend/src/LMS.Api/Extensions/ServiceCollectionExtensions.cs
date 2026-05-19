@@ -8,6 +8,8 @@ using LMS.Application.Content.Lessons;
 using LMS.Application.Content.Questions;
 using LMS.Application.Content.Subjects;
 using LMS.Application.Parent;
+using LMS.Application.Student;
+using LMS.Application.Teacher;
 using LMS.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -141,6 +143,12 @@ public static class ServiceCollectionExtensions
 
         // ── Parent portal services ────────────────────────────────────────
         services.AddScoped<IParentService, ParentService>();
+
+        // ── Student portal services ───────────────────────────────────────
+        services.AddScoped<IStudentService, StudentService>();
+
+        // ── Teacher portal services ───────────────────────────────────────
+        services.AddScoped<ITeacherService, TeacherService>();
 
         return services;
     }

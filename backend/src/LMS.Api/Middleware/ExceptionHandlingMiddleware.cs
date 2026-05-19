@@ -1,6 +1,8 @@
 using LMS.Application.Auth;
 using LMS.Application.Content;
 using LMS.Application.Parent;
+using LMS.Application.Student;
+using LMS.Application.Teacher;
 
 namespace LMS.Api.Middleware;
 
@@ -15,6 +17,8 @@ namespace LMS.Api.Middleware;
 ///   <item><see cref="ContentNotFoundException"/> → 404 Not Found</item>
 ///   <item><see cref="ContentConflictException"/> → 409 Conflict</item>
 ///   <item><see cref="ParentAccessDeniedException"/> → 403 Forbidden</item>
+///   <item><see cref="StudentAccessDeniedException"/> → 403 Forbidden</item>
+///   <item><see cref="LessonAlreadyCompletedException"/> → 409 Conflict</item>
 ///   <item>Anything else → 500 Internal Server Error</item>
 /// </list>
 /// </summary>
@@ -42,7 +46,10 @@ public sealed class ExceptionHandlingMiddleware
                    or EmailAlreadyRegisteredException
                    or ContentNotFoundException
                    or ContentConflictException
-                   or ParentAccessDeniedException)
+                   or ParentAccessDeniedException
+                   or StudentAccessDeniedException
+                   or LessonAlreadyCompletedException
+                   or TeacherAccessDeniedException)
                 _logger.LogWarning(
                     "Domain exception. Method={Method} Path={Path} Type={ExType} TraceId={TraceId}",
                     context.Request.Method,
@@ -91,6 +98,21 @@ public sealed class ExceptionHandlingMiddleware
                  exception.Message),
 
             ParentAccessDeniedException =>
+                (StatusCodes.Status403Forbidden,
+                 "https://tools.ietf.org/html/rfc7231#section-6.5.3",
+                 exception.Message),
+
+            StudentAccessDeniedException =>
+                (StatusCodes.Status403Forbidden,
+                 "https://tools.ietf.org/html/rfc7231#section-6.5.3",
+                 exception.Message),
+
+            LessonAlreadyCompletedException =>
+                (StatusCodes.Status409Conflict,
+                 "https://tools.ietf.org/html/rfc7231#section-6.5.8",
+                 exception.Message),
+
+            TeacherAccessDeniedException =>
                 (StatusCodes.Status403Forbidden,
                  "https://tools.ietf.org/html/rfc7231#section-6.5.3",
                  exception.Message),

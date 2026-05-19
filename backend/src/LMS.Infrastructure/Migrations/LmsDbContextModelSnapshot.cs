@@ -17,7 +17,7 @@ namespace LMS.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.26")
+                .HasAnnotation("ProductVersion", "8.0.27")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -456,6 +456,60 @@ namespace LMS.Infrastructure.Migrations
                     b.ToTable("lesson_progress", (string)null);
                 });
 
+            modelBuilder.Entity("LMS.Domain.Progress.QuestionAnswerRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("AnsweredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsCorrect")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("LessonId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("QuestionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("StudentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LessonId");
+
+                    b.HasIndex("QuestionId");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_question_answer_records_tenant_id");
+
+                    b.HasIndex("StudentId", "LessonId")
+                        .HasDatabaseName("ix_question_answer_records_student_lesson");
+
+                    b.HasIndex("StudentId", "QuestionId")
+                        .HasDatabaseName("ix_question_answer_records_student_question");
+
+                    b.ToTable("question_answer_records", (string)null);
+                });
+
             modelBuilder.Entity("LMS.Domain.Students.ParentProfile", b =>
                 {
                     b.Property<Guid>("Id")
@@ -540,6 +594,41 @@ namespace LMS.Infrastructure.Migrations
                         .HasDatabaseName("ix_student_profiles_user_id");
 
                     b.ToTable("student_profiles", (string)null);
+                });
+
+            modelBuilder.Entity("LMS.Domain.Students.TeacherStudentAssignment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("AssignedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("AssignedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("StudentProfileId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TeacherUserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssignedByUserId");
+
+                    b.HasIndex("StudentProfileId")
+                        .HasDatabaseName("ix_teacher_student_assignments_student");
+
+                    b.HasIndex("TeacherUserId")
+                        .HasDatabaseName("ix_teacher_student_assignments_teacher");
+
+                    b.HasIndex("TeacherUserId", "StudentProfileId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_teacher_student_assignments_unique");
+
+                    b.ToTable("teacher_student_assignments", (string)null);
                 });
 
             modelBuilder.Entity("LMS.Domain.Users.User", b =>
@@ -724,6 +813,36 @@ namespace LMS.Infrastructure.Migrations
                     b.Navigation("Student");
                 });
 
+            modelBuilder.Entity("LMS.Domain.Progress.QuestionAnswerRecord", b =>
+                {
+                    b.HasOne("LMS.Domain.Curriculum.Lesson", "Lesson")
+                        .WithMany()
+                        .HasForeignKey("LessonId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_question_answer_records_lesson");
+
+                    b.HasOne("LMS.Domain.Catalog.Question", "Question")
+                        .WithMany()
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_question_answer_records_question");
+
+                    b.HasOne("LMS.Domain.Students.StudentProfile", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_question_answer_records_student");
+
+                    b.Navigation("Lesson");
+
+                    b.Navigation("Question");
+
+                    b.Navigation("Student");
+                });
+
             modelBuilder.Entity("LMS.Domain.Students.ParentProfile", b =>
                 {
                     b.HasOne("LMS.Domain.Users.User", "User")
@@ -764,9 +883,42 @@ namespace LMS.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("LMS.Domain.Students.TeacherStudentAssignment", b =>
+                {
+                    b.HasOne("LMS.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("AssignedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_teacher_student_assignments_assigned_by");
+
+                    b.HasOne("LMS.Domain.Students.StudentProfile", "Student")
+                        .WithMany("TeacherAssignments")
+                        .HasForeignKey("StudentProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_teacher_student_assignments_student");
+
+                    b.HasOne("LMS.Domain.Users.User", "Teacher")
+                        .WithMany()
+                        .HasForeignKey("TeacherUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_teacher_student_assignments_teacher");
+
+                    b.Navigation("Student");
+
+                    b.Navigation("Teacher");
+                });
+
             modelBuilder.Entity("LMS.Domain.Conversations.AiConversation", b =>
                 {
                     b.Navigation("Messages");
+                });
+
+            modelBuilder.Entity("LMS.Domain.Students.StudentProfile", b =>
+                {
+                    b.Navigation("TeacherAssignments");
                 });
 #pragma warning restore 612, 618
         }

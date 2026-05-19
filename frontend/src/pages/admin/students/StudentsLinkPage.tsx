@@ -7,47 +7,69 @@ import {
   useStudents,
   useParentOptions,
   useAssignParent,
+  useTeacherOptions,
+  useAssignTeacher,
 } from '@/features/admin/students/hooks/useStudentAdmin'
 import type { StudentLinkSummaryDto } from '@/types/student-admin'
 
 /**
- * StudentsLinkPage — admin view for managing student–parent linkage.
+ * StudentsLinkPage — admin view for managing student–parent and student–teacher linkage.
  *
- * Shows all students with their current parent link status.
- * Inline row editing lets an admin assign or remove a parent.
+ * Shows all students with their current parent and teacher assignment status.
+ * Inline row editing lets an admin assign or remove a parent or teacher.
  *
  * Phase 3 upgrade path:
- *  - Replace inline select with a searchable ComboBox when parent counts grow.
+ *  - Replace inline select with a searchable ComboBox when option counts grow.
  *  - Add TenantId filter for SuperAdmin multi-tenant view.
  */
+
+type EditField = 'parent' | 'teacher'
+
+interface EditState {
+  studentId: string
+  field:     EditField
+  value:     string  // parentProfileId | teacherUserId | 'none'
+}
+
 export default function StudentsLinkPage() {
   const { t } = useTranslation()
 
   const { data: students, isLoading, isError, error, refetch } = useStudents()
-  const { data: parentOptions } = useParentOptions()
-  const assignParentMutation = useAssignParent()
+  const { data: parentOptions  } = useParentOptions()
+  const { data: teacherOptions } = useTeacherOptions()
+  const assignParentMutation  = useAssignParent()
+  const assignTeacherMutation = useAssignTeacher()
 
-  // studentId → selected value in the inline edit form ('none' = unlink)
-  const [editingId, setEditingId]   = useState<string | null>(null)
-  const [selectValue, setSelectValue] = useState<string>('none')
+  const [editState, setEditState] = useState<EditState | null>(null)
 
-  function startEdit(student: StudentLinkSummaryDto) {
-    setEditingId(student.studentId)
-    setSelectValue(student.parentProfileId ?? 'none')
+  function startEdit(student: StudentLinkSummaryDto, field: EditField) {
+    const value = field === 'parent'
+      ? (student.parentProfileId ?? 'none')
+      : (student.teacherUserId   ?? 'none')
+    setEditState({ studentId: student.studentId, field, value })
   }
 
   function cancelEdit() {
-    setEditingId(null)
-    setSelectValue('none')
+    setEditState(null)
   }
 
   async function handleSave(studentId: string) {
-    await assignParentMutation.mutateAsync({
-      studentId,
-      payload: { parentProfileId: selectValue === 'none' ? null : selectValue },
-    })
-    setEditingId(null)
+    if (!editState) return
+    if (editState.field === 'parent') {
+      await assignParentMutation.mutateAsync({
+        studentId,
+        payload: { parentProfileId: editState.value === 'none' ? null : editState.value },
+      })
+    } else {
+      await assignTeacherMutation.mutateAsync({
+        studentId,
+        payload: { teacherUserId: editState.value === 'none' ? null : editState.value },
+      })
+    }
+    setEditState(null)
   }
+
+  const isSaving = assignParentMutation.isPending || assignTeacherMutation.isPending
 
   return (
     <PageContainer
@@ -65,52 +87,67 @@ export default function StudentsLinkPage() {
       >
         <div className="overflow-hidden rounded-md border border-stroke bg-surface">
           {/* Header row */}
-          <div className="hidden grid-cols-[1fr_10rem_1fr_10rem] gap-4 border-b border-stroke bg-surface-alt px-4 py-2 text-xs font-semibold uppercase tracking-wide text-content-secondary sm:grid">
+          <div className="hidden grid-cols-[1fr_8rem_1fr_1fr_10rem] gap-4 border-b border-stroke bg-surface-alt px-4 py-2 text-xs font-semibold uppercase tracking-wide text-content-secondary sm:grid">
             <span>{t('admin.students.colStudent')}</span>
             <span>{t('admin.students.colGrade')}</span>
             <span>{t('admin.students.colParent')}</span>
+            <span>{t('admin.students.colTeacher')}</span>
             <span className="text-right">{t('common.actions')}</span>
           </div>
 
           <ul role="list" className="divide-y divide-stroke">
             {students?.map(student => (
               <li key={student.studentId} className="px-4 py-3">
-                {editingId === student.studentId ? (
+                {editState?.studentId === student.studentId ? (
                   /* ── Inline edit row ─────────────────────────────────── */
                   <div className="flex flex-wrap items-center gap-3">
                     <span className="flex-1 text-sm font-medium text-content-primary">
                       {student.fullName}
                     </span>
 
-                    <select
-                      className="rounded border border-stroke bg-surface px-2 py-1 text-sm text-content-primary focus:outline-none focus:ring-2 focus:ring-brand-500"
-                      value={selectValue}
-                      onChange={e => setSelectValue(e.target.value)}
-                      aria-label={t('admin.students.selectParent')}
-                    >
-                      <option value="none">{t('admin.students.noParent')}</option>
-                      {parentOptions?.map(opt => (
-                        <option key={opt.parentProfileId} value={opt.parentProfileId}>
-                          {opt.fullName} ({opt.email})
-                        </option>
-                      ))}
-                    </select>
+                    {editState.field === 'parent' ? (
+                      <select
+                        className="rounded border border-stroke bg-surface px-2 py-1 text-sm text-content-primary focus:outline-none focus:ring-2 focus:ring-brand-500"
+                        value={editState.value}
+                        onChange={e => setEditState({ ...editState, value: e.target.value })}
+                        aria-label={t('admin.students.selectParent')}
+                      >
+                        <option value="none">{t('admin.students.noParent')}</option>
+                        {parentOptions?.map(opt => (
+                          <option key={opt.parentProfileId} value={opt.parentProfileId}>
+                            {opt.fullName} ({opt.email})
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <select
+                        className="rounded border border-stroke bg-surface px-2 py-1 text-sm text-content-primary focus:outline-none focus:ring-2 focus:ring-brand-500"
+                        value={editState.value}
+                        onChange={e => setEditState({ ...editState, value: e.target.value })}
+                        aria-label={t('admin.students.selectTeacher')}
+                      >
+                        <option value="none">{t('admin.students.noTeacher')}</option>
+                        {teacherOptions?.map(opt => (
+                          <option key={opt.teacherUserId} value={opt.teacherUserId}>
+                            {opt.fullName} ({opt.email})
+                          </option>
+                        ))}
+                      </select>
+                    )}
 
                     <div className="flex shrink-0 items-center gap-2">
                       <Button
                         size="sm"
                         onClick={() => handleSave(student.studentId)}
-                        disabled={assignParentMutation.isPending}
+                        disabled={isSaving}
                       >
-                        {assignParentMutation.isPending
-                          ? t('common.saving')
-                          : t('common.save')}
+                        {isSaving ? t('common.saving') : t('common.save')}
                       </Button>
                       <Button
                         variant="secondary"
                         size="sm"
                         onClick={cancelEdit}
-                        disabled={assignParentMutation.isPending}
+                        disabled={isSaving}
                       >
                         {t('common.cancel')}
                       </Button>
@@ -118,7 +155,7 @@ export default function StudentsLinkPage() {
                   </div>
                 ) : (
                   /* ── Display row ─────────────────────────────────────── */
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_10rem_1fr_10rem] sm:items-center sm:gap-4">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_8rem_1fr_1fr_10rem] sm:items-center sm:gap-4">
                     <span className="text-sm font-medium text-content-primary">
                       {student.fullName}
                     </span>
@@ -134,29 +171,40 @@ export default function StudentsLinkPage() {
                     <span className="flex items-center gap-2 text-sm">
                       {student.parentProfileId ? (
                         <>
-                          <span className="text-content-primary">
-                            {student.parentFullName}
-                          </span>
-                          <span className="text-xs text-content-secondary">
-                            {student.parentEmail}
-                          </span>
+                          <span className="text-content-primary">{student.parentFullName}</span>
+                          <span className="text-xs text-content-secondary">{student.parentEmail}</span>
                         </>
                       ) : (
-                        <Badge variant="warning">
-                          {t('admin.students.unlinked')}
-                        </Badge>
+                        <Badge variant="warning">{t('admin.students.unlinked')}</Badge>
                       )}
                     </span>
 
-                    <div className="flex justify-end">
+                    <span className="flex items-center gap-2 text-sm">
+                      {student.teacherUserId ? (
+                        <span className="text-content-primary">{student.teacherFullName}</span>
+                      ) : (
+                        <Badge variant="warning">{t('admin.students.unassignedTeacher')}</Badge>
+                      )}
+                    </span>
+
+                    <div className="flex flex-col items-end gap-1">
                       <Button
                         variant="secondary"
                         size="sm"
-                        onClick={() => startEdit(student)}
+                        onClick={() => startEdit(student, 'parent')}
                       >
                         {student.parentProfileId
                           ? t('admin.students.changeParent')
                           : t('admin.students.assignParent')}
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => startEdit(student, 'teacher')}
+                      >
+                        {student.teacherUserId
+                          ? t('admin.students.changeTeacher')
+                          : t('admin.students.assignTeacher')}
                       </Button>
                     </div>
                   </div>
@@ -169,3 +217,4 @@ export default function StudentsLinkPage() {
     </PageContainer>
   )
 }
+

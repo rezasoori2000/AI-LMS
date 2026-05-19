@@ -3,14 +3,17 @@ import {
   getStudents,
   getParentOptions,
   assignParent,
+  getTeacherOptions,
+  assignTeacher,
 } from '@/services/student-admin.service'
-import type { AssignParentPayload } from '@/types/student-admin'
+import type { AssignParentPayload, AssignTeacherPayload } from '@/types/student-admin'
 
 // ── Query key factory ─────────────────────────────────────────────────────────
 
 export const studentAdminKeys = {
-  students:      ['admin', 'students', 'list'] as const,
-  parentOptions: ['admin', 'students', 'parent-options'] as const,
+  students:       ['admin', 'students', 'list'] as const,
+  parentOptions:  ['admin', 'students', 'parent-options'] as const,
+  teacherOptions: ['admin', 'students', 'teacher-options'] as const,
 }
 
 // ── Queries ───────────────────────────────────────────────────────────────────
@@ -29,6 +32,13 @@ export function useParentOptions() {
   })
 }
 
+export function useTeacherOptions() {
+  return useQuery({
+    queryKey: studentAdminKeys.teacherOptions,
+    queryFn:  () => getTeacherOptions(),
+  })
+}
+
 // ── Mutations ─────────────────────────────────────────────────────────────────
 
 export function useAssignParent() {
@@ -37,7 +47,17 @@ export function useAssignParent() {
     mutationFn: ({ studentId, payload }: { studentId: string; payload: AssignParentPayload }) =>
       assignParent(studentId, payload),
     onSuccess: () => {
-      // Refresh the students list so the updated linkage is reflected.
+      qc.invalidateQueries({ queryKey: studentAdminKeys.students })
+    },
+  })
+}
+
+export function useAssignTeacher() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ studentId, payload }: { studentId: string; payload: AssignTeacherPayload }) =>
+      assignTeacher(studentId, payload),
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: studentAdminKeys.students })
     },
   })

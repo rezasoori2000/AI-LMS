@@ -317,12 +317,74 @@ See [Phase 1 Section 8 Readiness Checklist](docs/development/phase1-section8-rea
 
 ---
 
+## Phase 1 — Section 9 Status
+
+**Completed:**
+- [x] Architecture boundaries locked — `StudentProfile` and `User` carry zero adaptive fields; rule documented and validated
+- [x] `QuestionAnswerRecord` domain entity — durable binary correct/incorrect outcome per question per lesson completion
+- [x] Migration `AddQuestionAnswerRecordTable` — indexes on `(StudentId, LessonId)` and `(StudentId, QuestionId)`
+- [x] `StudentService.CompleteLessonAsync` — persists answer records in the same `SaveChangesAsync` call as `LessonProgress`
+- [x] `LMS.Domain/Personalization/DesignNotes.cs` updated — entity shapes aligned with Part 3 design; exclusion list and GDPR deletion order added
+- [x] `docs/architecture/domain-model-overview.md` updated — `QuestionAnswerRecord` and `TeacherStudentAssignment` added
+- [x] `docs/architecture/personalization-readiness.md` created — authoritative boundary reference for Phase 3 AI tutor work
+- [x] Boundary validation passed — no adaptive fields in identity or profile entities; no answer leakage in student DTOs
+- [x] **139 backend tests** · **41 frontend tests** — all passing · `tsc --noEmit` clean
+
+**Phase 1 locked decisions:**
+- `LearnerProfile` keyed by `(UserId, TenantId)` — durable identity anchor even if `StudentProfile` is recreated
+- Observation layer (`LessonProgress`, `QuestionAnswerRecord`, `Enrollment`, `AiConversation`) is read-only from Phase 3
+- `LearnerPreferences` is the only personalization entity a student directly edits — no auto-population from inferred signals
+- `ConsistencySignal` is a factual activity count — no streak or gamification framing
+- `TopicMasterySnapshot` stores numeric ratios only — no inferred concept-weakness string labels
+
+**Known signal quality gap (documented):**
+- `ShortAnswer` questions always produce `IsCorrect = false` in Phase 1 (no AI grading). Phase 3 `TopicMasterySnapshot` computation must account for this.
+
+**Deferred to Phase 3+:**
+- `LearnerProfile`, `LearnerPreferences`, `TopicMasterySnapshot`, `ConsistencySignal` entity implementation
+- `TopicMasterySnapshot` refresh in `CompleteLessonAsync`
+- AI context-assembly service
+- Vector store integration
+- `Question.TopicId` content taxonomy
+- `formatLastActivity` i18n (teacher + parent portals)
+- Pending migrations apply when Docker is running: `dotnet ef database update --project src/LMS.Infrastructure --startup-project src/LMS.Api`
+
+See [Phase 1 Section 9 Readiness Checklist](docs/development/phase1-section9-readiness.md).
+
+---
+
+## Phase 1 — Section 10 Status
+
+**Platform Audit, Consistency Cleanup, and Phase 1 Readiness Review** — Complete.
+
+### What was done
+- **Added `StudentIntegrationTests.cs`**: 17 new API integration tests covering the full student portal (auth guards, empty-state GETs, happy-path enrolled-student flows, 409 re-completion). Closed the last zero-coverage gap.
+- **Unified exception handling**: Introduced `AdminLinkValidationException` (→ 400) in `LMS.Application`. Replaced BCL `KeyNotFoundException`/`ArgumentException` in `StudentAdminService` with typed domain exceptions. Registered in `ExceptionHandlingMiddleware`. Removed inline try/catch blocks from `StudentsController`. All existing link tests still pass.
+- **Renamed `ChildDetailResponse` → `ChildDetailDto`**: 5 files (C# + TypeScript). Naming is now consistent with every other DTO in the Application layer.
+- **Extracted date utilities**: `formatDate` and `formatLastActivity` moved from two portal pages into `frontend/src/utils/dateFormat.ts`.
+
+### Test counts (after this section)
+- Backend: **158 tests** (70 domain + 12 application + 76 API integration)
+- Frontend: **41 tests**
+
+### Known deferred items
+- `BackendUserRoleValue` integer-vs-string type mismatch — must fix before Phase 2 route guards
+- `BaseApiController` adoption inconsistency — cosmetic; consider removal in Phase 2
+- Enrollment ordering (Parent ascending vs Teacher descending) — low-priority UX alignment
+- Route-level role enforcement — Phase 2 work, blocked on the type-system fix above
+- `formatLastActivity` i18n — deferred to Phase 2 translation pipeline work
+
+See [Phase 1 Section 10 Readiness Checklist](docs/development/phase1-section10-readiness.md).
+
+---
+
 ## Documentation
 
 ### Architecture
 - [Architecture Overview](docs/architecture/architecture-overview.md)
 - [Domain Model Overview](docs/architecture/domain-model-overview.md)
 - [Persistence and Migrations](docs/architecture/persistence-and-migrations.md)
+- [Personalization Readiness](docs/architecture/personalization-readiness.md)
 
 ### Student Portal
 - [Student Portal MVP](docs/student-portal-mvp.md)
@@ -347,6 +409,8 @@ See [Phase 1 Section 8 Readiness Checklist](docs/development/phase1-section8-rea
 - [Phase 1 Section 6 Readiness Checklist](docs/development/phase1-section6-readiness.md)
 - [Phase 1 Section 7 Readiness Checklist](docs/development/phase1-section7-readiness.md)
 - [Phase 1 Section 8 Readiness Checklist](docs/development/phase1-section8-readiness.md)
+- [Phase 1 Section 9 Readiness Checklist](docs/development/phase1-section9-readiness.md)
+- [Phase 1 Section 10 Readiness Checklist](docs/development/phase1-section10-readiness.md)
 
 ### Frontend
 - [Frontend UI Foundation](docs/frontend/ui-foundation.md)

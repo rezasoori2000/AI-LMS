@@ -21,11 +21,17 @@ Chapter        (SubjectId + GradeId + order)
 Lesson         (ChapterId + order + Markdown content)
 Question       (LessonId nullable + type + options JSON)
 
-Enrollment     ─ StudentProfileId + SubjectId + status
-LessonProgress ─ StudentProfileId + LessonId  + status + score
+Enrollment              ─ StudentProfileId + SubjectId + status
+LessonProgress          ─ StudentProfileId + LessonId  + status + score
+QuestionAnswerRecord    ─ StudentProfileId + LessonId + QuestionId + IsCorrect
+
+TeacherStudentAssignment ─ TeacherUserId + StudentProfileId  (M:M join)
 
 AiConversation ─ StudentProfileId + optional LessonId
 AiMessage      ─ ConversationId (owned messages, append-only)
+
+[Personalization]  — namespace reserved; entities planned for Phase 3
+                     See docs/architecture/personalization-readiness.md
 ```
 
 ---
@@ -56,6 +62,13 @@ AiMessage      ─ ConversationId (owned messages, append-only)
 |--------|-------|------------|
 | `Enrollment` | `enrollments` | `student_id`, `subject_id`, `status`; filtered unique on `(student_id, subject_id) WHERE status='Active'` |
 | `LessonProgress` | `lesson_progress` | `student_id`, `lesson_id`, `status`, `score_percent` decimal(5,2); unique on `(student_id, lesson_id)` |
+| `QuestionAnswerRecord` | `question_answer_records` | `student_id`, `lesson_id` (denorm), `question_id`, `is_correct` bool, `answered_at`; indexes on `(student_id, lesson_id)` and `(student_id, question_id)` |
+
+### Teacher Assignment
+
+| Entity | Table | Key Fields |
+|--------|-------|------------|
+| `TeacherStudentAssignment` | `teacher_student_assignments` | `teacher_user_id` (FK → Users), `student_profile_id`, `assigned_by_user_id`; unique on `(teacher_user_id, student_profile_id)` |
 
 ### AI Conversations
 
@@ -78,8 +91,12 @@ Subject (1) ────────────────────── (
 StudentProfile (1) ─────────────── (N) Enrollment
 StudentProfile (1) ─────────────── (N) LessonProgress
 StudentProfile (1) ─────────────── (N) AiConversation
-AiConversation (1) ─────────────── (N) AiMessage       [Cascade delete — messages own nothing]
-ParentProfile (1) ──────────────── (N) StudentProfile   [Phase 1: 1:1 via nullable FK]
+StudentProfile (1) ─────────────── (N) QuestionAnswerRecord
+Question (1) ───────────────────── (N) QuestionAnswerRecord
+AiConversation (1) ─────────────── (N) AiMessage           [Cascade delete — messages own nothing]
+ParentProfile (1) ──────────────── (N) StudentProfile       [Phase 1: 1:1 via nullable FK]
+User (1) ───────────────────────── (N) TeacherStudentAssignment  [as TeacherUserId]
+StudentProfile (1) ─────────────── (N) TeacherStudentAssignment
 User (1) ───────────────────────── (1) ParentProfile
 User (1) ───────────────────────── (1) StudentProfile
 ```
@@ -103,6 +120,12 @@ User (1) ───────────────────────�
 | `ai_conversations.student_id` → `student_profiles` | Restrict |
 | `ai_conversations.lesson_id` → `lessons` | **SetNull** |
 | `ai_messages.conversation_id` → `ai_conversations` | **Cascade** |
+| `question_answer_records.student_id` → `student_profiles` | Restrict |
+| `question_answer_records.lesson_id` → `lessons` | Restrict |
+| `question_answer_records.question_id` → `questions` | Restrict |
+| `teacher_student_assignments.teacher_user_id` → `users` | Restrict |
+| `teacher_student_assignments.student_profile_id` → `student_profiles` | **Cascade** |
+| `teacher_student_assignments.assigned_by_user_id` → `users` | Restrict |
 
 ---
 
@@ -156,3 +179,4 @@ All entities except `AiMessage` inherit `AuditableEntity`:
 | Curriculum standards tags (`CurriculumStandard`) | External standard mapping (Common Core, etc.) — Phase 3 |
 | `Lesson.ContentBlocks` normalised table | Rich-media structured blocks replace `Content` Markdown — Phase 3 |
 | Read models / reporting views | CQRS projections or materialised views for dashboards — Phase 4+ |
+| `LearnerProfile`, `LearnerPreferences`, `TopicMasterySnapshot`, `ConsistencySignal` | Personalization entities — namespace reserved; see [personalization-readiness.md](personalization-readiness.md) |

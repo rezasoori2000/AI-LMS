@@ -1,4 +1,5 @@
 using LMS.Application.Common.Interfaces;
+using LMS.Application.Content;
 using LMS.Domain.Students;
 using LMS.Domain.Users;
 using Microsoft.EntityFrameworkCore;
@@ -136,7 +137,7 @@ public sealed class StudentAdminService : IStudentAdminService
             .Include(s => s.User)
             .Include(s => s.Grade)
             .FirstOrDefaultAsync(s => s.Id == studentId, ct)
-            ?? throw new KeyNotFoundException($"Student profile '{studentId}' was not found.");
+            ?? throw new ContentNotFoundException("StudentProfile", studentId);
 
         Domain.Students.ParentProfile? newParent = null;
 
@@ -146,9 +147,8 @@ public sealed class StudentAdminService : IStudentAdminService
             newParent = await _db.ParentProfiles
                 .Include(p => p.User)
                 .FirstOrDefaultAsync(p => p.Id == request.ParentProfileId.Value, ct)
-                ?? throw new ArgumentException(
-                    $"Parent profile '{request.ParentProfileId.Value}' was not found.",
-                    nameof(request));
+                ?? throw new AdminLinkValidationException(
+                    $"Parent profile '{request.ParentProfileId.Value}' was not found.");
 
             student.LinkParent(request.ParentProfileId.Value);
         }
@@ -213,7 +213,7 @@ public sealed class StudentAdminService : IStudentAdminService
             .Include(s => s.User)
             .Include(s => s.Grade)
             .FirstOrDefaultAsync(s => s.Id == studentId, ct)
-            ?? throw new KeyNotFoundException($"Student profile '{studentId}' was not found.");
+            ?? throw new ContentNotFoundException("StudentProfile", studentId);
 
         // Phase 1 convention: replace-assign — remove all existing assignments first.
         var existing = await _db.TeacherStudentAssignments
@@ -229,9 +229,8 @@ public sealed class StudentAdminService : IStudentAdminService
             newTeacher = await _db.Users
                 .FirstOrDefaultAsync(u => u.Id == request.TeacherUserId.Value
                                        && u.Role == UserRole.Teacher, ct)
-                ?? throw new ArgumentException(
-                    $"Teacher user '{request.TeacherUserId.Value}' was not found or is not a teacher.",
-                    nameof(request));
+                ?? throw new AdminLinkValidationException(
+                    $"Teacher user '{request.TeacherUserId.Value}' was not found or is not a teacher.");
 
             var adminId    = _currentUser.UserId ?? Guid.Empty;
             var assignment = TeacherStudentAssignment.Create(

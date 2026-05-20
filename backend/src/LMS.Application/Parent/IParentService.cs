@@ -23,5 +23,5 @@ public interface IParentService
     /// <exception cref="ParentAccessDeniedException">
     /// Thrown (→ 403) when <paramref name="studentId"/> is not linked to the calling parent.
     /// </exception>
-    Task<ChildDetailResponse> GetChildDetailAsync(Guid studentId, CancellationToken ct = default);
+    Task<ChildDetailDto> GetChildDetailAsync(Guid studentId, CancellationToken ct = default);
 }

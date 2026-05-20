@@ -1,3 +1,4 @@
+using LMS.Application.Admin.Students;
 using LMS.Application.Auth;
 using LMS.Application.Content;
 using LMS.Application.Parent;
@@ -19,6 +20,8 @@ namespace LMS.Api.Middleware;
 ///   <item><see cref="ParentAccessDeniedException"/> → 403 Forbidden</item>
 ///   <item><see cref="StudentAccessDeniedException"/> → 403 Forbidden</item>
 ///   <item><see cref="LessonAlreadyCompletedException"/> → 409 Conflict</item>
+///   <item><see cref="TeacherAccessDeniedException"/> → 403 Forbidden</item>
+///   <item><see cref="AdminLinkValidationException"/> → 400 Bad Request</item>
 ///   <item>Anything else → 500 Internal Server Error</item>
 /// </list>
 /// </summary>
@@ -49,7 +52,8 @@ public sealed class ExceptionHandlingMiddleware
                    or ParentAccessDeniedException
                    or StudentAccessDeniedException
                    or LessonAlreadyCompletedException
-                   or TeacherAccessDeniedException)
+                   or TeacherAccessDeniedException
+                   or AdminLinkValidationException)
                 _logger.LogWarning(
                     "Domain exception. Method={Method} Path={Path} Type={ExType} TraceId={TraceId}",
                     context.Request.Method,
@@ -115,6 +119,11 @@ public sealed class ExceptionHandlingMiddleware
             TeacherAccessDeniedException =>
                 (StatusCodes.Status403Forbidden,
                  "https://tools.ietf.org/html/rfc7231#section-6.5.3",
+                 exception.Message),
+
+            AdminLinkValidationException =>
+                (StatusCodes.Status400BadRequest,
+                 "https://tools.ietf.org/html/rfc7231#section-6.5.1",
                  exception.Message),
 
             _ =>

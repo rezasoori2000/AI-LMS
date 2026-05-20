@@ -11,7 +11,7 @@
  * Do not use apiClient directly in pages — import from here.
  */
 import apiClient from '@/services/api-client'
-import type { ChildSummaryDto, ChildDetailResponse } from '@/types/parent'
+import type { ChildSummaryDto, ChildDetailDto } from '@/types/parent'
 
 /**
  * Returns all students linked to the calling parent.
@@ -24,5 +24,5 @@ export const getMyChildren = (): Promise<ChildSummaryDto[]> =>
  * Returns the full detail for one linked child.
  * Rejects (HTTP 403) when the student is not linked to the calling parent.
  */
-export const getChildDetail = (studentId: string): Promise<ChildDetailResponse> =>
-  apiClient.get<ChildDetailResponse>(`/parent/children/${studentId}`).then(r => r.data)
+export const getChildDetail = (studentId: string): Promise<ChildDetailDto> =>
+  apiClient.get<ChildDetailDto>(`/parent/children/${studentId}`).then(r => r.data)

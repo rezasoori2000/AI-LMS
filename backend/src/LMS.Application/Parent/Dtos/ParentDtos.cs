@@ -30,6 +30,6 @@ public sealed record EnrollmentSummaryDto(
 /// <summary>
 /// Full response for <c>GET /api/parent/children/{studentId}</c>.
 /// </summary>
-public sealed record ChildDetailResponse(
+public sealed record ChildDetailDto(
     ChildSummaryDto            Summary,
     List<EnrollmentSummaryDto> Enrollments);

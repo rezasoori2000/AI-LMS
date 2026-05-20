@@ -5,6 +5,7 @@ import { PageContainer }               from '@/components/layout/PageContainer'
 import { StateWrapper }                from '@/components/feedback'
 import { Badge, Button, SectionCard, StatCard } from '@/components/ui'
 import { useStudentDetail, useStudentProgress } from '@/features/teacher/hooks/useTeacher'
+import { formatDate, formatLastActivity }        from '@/utils/dateFormat'
 import type {
   TeacherEnrollmentItemDto,
   TeacherLessonProgressItemDto,
@@ -24,22 +25,6 @@ const PROGRESS_VARIANT: Record<ProgressStatus, 'success' | 'warning' | 'default'
   NotStarted: 'default',
   InProgress: 'warning',
   Completed:  'success',
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
-    year:  'numeric',
-    month: 'short',
-    day:   'numeric',
-  })
-}
-
-function formatLastActivity(iso: string | null): string {
-  if (!iso) return '—'
-  const diffDays = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000)
-  if (diffDays === 0) return 'Today'
-  if (diffDays === 1) return 'Yesterday'
-  return `${diffDays}d ago`
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────

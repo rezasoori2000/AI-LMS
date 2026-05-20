@@ -101,7 +101,7 @@ public sealed class ParentService : IParentService
         )).ToList();
     }
 
-    public async Task<ChildDetailResponse> GetChildDetailAsync(
+    public async Task<ChildDetailDto> GetChildDetailAsync(
         Guid studentId,
         CancellationToken ct = default)
     {
@@ -151,7 +151,7 @@ public sealed class ParentService : IParentService
             .ToListAsync(ct);
 
         if (enrollments.Count == 0)
-            return new ChildDetailResponse(summary, []);
+            return new ChildDetailDto(summary, []);
 
         // Load all lesson progress for this student in one query,
         // including Lesson → Chapter so we can filter by SubjectId
@@ -204,7 +204,7 @@ public sealed class ParentService : IParentService
                     : null);
         }).ToList();
 
-        return new ChildDetailResponse(summary, enrollmentSummaries);
+        return new ChildDetailDto(summary, enrollmentSummaries);
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────

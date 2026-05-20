@@ -33,8 +33,8 @@ export interface EnrollmentSummaryDto {
   averageScore:      number | null
 }
 
-/** Full response for GET /api/parent/children/{studentId} — matches backend ChildDetailResponse. */
-export interface ChildDetailResponse {
+/** Full response for GET /api/parent/children/{studentId} — matches backend ChildDetailDto. */
+export interface ChildDetailDto {
   summary:     ChildSummaryDto
   enrollments: EnrollmentSummaryDto[]
 }

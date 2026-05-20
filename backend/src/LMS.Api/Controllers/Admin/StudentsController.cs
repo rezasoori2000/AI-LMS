@@ -52,21 +52,7 @@ public sealed class StudentsController : ControllerBase
         Guid                studentId,
         AssignParentRequest request,
         CancellationToken   ct)
-    {
-        try
-        {
-            var result = await _students.AssignParentAsync(studentId, request, ct);
-            return Ok(result);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { title = ex.Message });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { title = ex.Message });
-        }
-    }
+        => Ok(await _students.AssignParentAsync(studentId, request, ct));
 
     /// <summary>
     /// Assigns or removes the teacher for a student.
@@ -80,19 +66,5 @@ public sealed class StudentsController : ControllerBase
         Guid                 studentId,
         AssignTeacherRequest request,
         CancellationToken    ct)
-    {
-        try
-        {
-            var result = await _students.AssignTeacherAsync(studentId, request, ct);
-            return Ok(result);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { title = ex.Message });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { title = ex.Message });
-        }
-    }
+        => Ok(await _students.AssignTeacherAsync(studentId, request, ct));
 }

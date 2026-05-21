@@ -1,4 +1,5 @@
 using LMS.Application.Admin.Students;
+using LMS.Application.AiTutor;
 using LMS.Application.Auth;
 using LMS.Application.Content;
 using LMS.Application.Parent;
@@ -22,6 +23,7 @@ namespace LMS.Api.Middleware;
 ///   <item><see cref="LessonAlreadyCompletedException"/> → 409 Conflict</item>
 ///   <item><see cref="TeacherAccessDeniedException"/> → 403 Forbidden</item>
 ///   <item><see cref="AdminLinkValidationException"/> → 400 Bad Request</item>
+///   <item><see cref="TutorConversationEndedException"/> → 409 Conflict</item>
 ///   <item>Anything else → 500 Internal Server Error</item>
 /// </list>
 /// </summary>
@@ -53,7 +55,8 @@ public sealed class ExceptionHandlingMiddleware
                    or StudentAccessDeniedException
                    or LessonAlreadyCompletedException
                    or TeacherAccessDeniedException
-                   or AdminLinkValidationException)
+                   or AdminLinkValidationException
+                   or TutorConversationEndedException)
                 _logger.LogWarning(
                     "Domain exception. Method={Method} Path={Path} Type={ExType} TraceId={TraceId}",
                     context.Request.Method,
@@ -104,26 +107,31 @@ public sealed class ExceptionHandlingMiddleware
             ParentAccessDeniedException =>
                 (StatusCodes.Status403Forbidden,
                  "https://tools.ietf.org/html/rfc7231#section-6.5.3",
-                 exception.Message),
+                 "Access denied."),
 
             StudentAccessDeniedException =>
                 (StatusCodes.Status403Forbidden,
                  "https://tools.ietf.org/html/rfc7231#section-6.5.3",
-                 exception.Message),
+                 "Access denied."),
 
             LessonAlreadyCompletedException =>
                 (StatusCodes.Status409Conflict,
                  "https://tools.ietf.org/html/rfc7231#section-6.5.8",
-                 exception.Message),
+                 "This lesson has already been completed."),
 
             TeacherAccessDeniedException =>
                 (StatusCodes.Status403Forbidden,
                  "https://tools.ietf.org/html/rfc7231#section-6.5.3",
-                 exception.Message),
+                 "Access denied."),
 
             AdminLinkValidationException =>
                 (StatusCodes.Status400BadRequest,
                  "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                 exception.Message),
+
+            TutorConversationEndedException =>
+                (StatusCodes.Status409Conflict,
+                 "https://tools.ietf.org/html/rfc7231#section-6.5.8",
                  exception.Message),
 
             _ =>

@@ -355,26 +355,76 @@ See [Phase 1 Section 9 Readiness Checklist](docs/development/phase1-section9-rea
 
 ## Phase 1 — Section 10 Status
 
-**Platform Audit, Consistency Cleanup, and Phase 1 Readiness Review** — Complete.
+**Platform Audit, Consistency Cleanup, and Phase 1 Readiness Review** — Complete (all 5 parts).
 
-### What was done
-- **Added `StudentIntegrationTests.cs`**: 17 new API integration tests covering the full student portal (auth guards, empty-state GETs, happy-path enrolled-student flows, 409 re-completion). Closed the last zero-coverage gap.
-- **Unified exception handling**: Introduced `AdminLinkValidationException` (→ 400) in `LMS.Application`. Replaced BCL `KeyNotFoundException`/`ArgumentException` in `StudentAdminService` with typed domain exceptions. Registered in `ExceptionHandlingMiddleware`. Removed inline try/catch blocks from `StudentsController`. All existing link tests still pass.
-- **Renamed `ChildDetailResponse` → `ChildDetailDto`**: 5 files (C# + TypeScript). Naming is now consistent with every other DTO in the Application layer.
-- **Extracted date utilities**: `formatDate` and `formatLastActivity` moved from two portal pages into `frontend/src/utils/dateFormat.ts`.
+### Part 1 — Audit and critical gaps
+- Added `StudentIntegrationTests.cs`: 17 new API integration tests; closed the last zero-coverage gap across all portals.
+- Unified exception handling: `AdminLinkValidationException` (→ 400) in Application layer; removed all inline try/catch from `StudentsController`.
+- Renamed `ChildDetailResponse` → `ChildDetailDto`: 5 files; naming consistent with all other DTOs in the Application layer.
+- Extracted date utilities: `formatDate` and `formatLastActivity` consolidated in `frontend/src/utils/dateFormat.ts`.
 
-### Test counts (after this section)
-- Backend: **158 tests** (70 domain + 12 application + 76 API integration)
-- Frontend: **41 tests**
+### Part 2 — Cross-module cleanup implementation
+- Fixed `BackendUserRoleValue` type: changed from integer union to string union matching backend serialization (`"Student"` not `5`). Added `toFrontendRole()` helper.
+- Wired role-based nav: `AppLayout` now resolves `NAV_ITEMS_BY_ROLE[toFrontendRole(user.role)]` — each role sees their own sidebar.
+- Removed `BaseApiController`: deleted the unused base class; `AuthController` now extends `ControllerBase` directly.
+- Normalized enrollment ordering: `ParentService.GetChildDetailAsync` changed to descending, matching `TeacherService`.
 
-### Known deferred items
-- `BackendUserRoleValue` integer-vs-string type mismatch — must fix before Phase 2 route guards
-- `BaseApiController` adoption inconsistency — cosmetic; consider removal in Phase 2
-- Enrollment ordering (Parent ascending vs Teacher descending) — low-priority UX alignment
-- Route-level role enforcement — Phase 2 work, blocked on the type-system fix above
-- `formatLastActivity` i18n — deferred to Phase 2 translation pipeline work
+### Part 3 — Authorization & ownership enforcement review
+- JWT startup fail-fast guard: application refuses to start in Production/Staging if the JWT secret key is absent or shorter than 32 characters.
+- Standardized 403 response titles: all `*AccessDeniedException` cases return `"Access denied."` — no resource GUIDs in response bodies.
+- Added `[FromBody]` on `AssignParent` and `AssignTeacher` PATCH request parameters in `StudentsController`.
+
+### Part 4 — Test strategy and minimum automated coverage
+- Teacher portal: 3 helpers + 4 new tests (happy-path list/detail/progress + cross-teacher isolation).
+- Parent portal: 3 helpers + 3 new tests (happy-path children/child-detail + cross-parent isolation).
+- Student portal: 1 helper + 3 new tests (`CorrectAnswer` exclusion, `QuestionAnswerRecord` persistence, 100% score).
+- Frontend: `dateFormat.test.ts` (NEW) — 6 tests with `vi.useFakeTimers()` for deterministic date assertions.
+
+### Part 5 — Developer experience, local setup, and Section 10 closeout
+- Reviewed and validated all local developer workflows (Docker Compose, native run, test commands, migrations).
+- Updated `local-development.md`: added JWT secret requirement note, migration quick-reference, and known dev seed limitation.
+- Updated `seed-data.md`: noted that `teacher@lms.dev` shows an empty student list by design (assignments are admin-managed).
+- Captured consolidated Phase 2 starting point in the Section 10 readiness doc.
+
+### Final test counts
+- Backend: **168 tests** (70 domain + 12 application + 86 API integration)
+- Frontend: **47 tests** (3 test files)
+- All passing; `tsc --noEmit` clean; `dotnet build` 0 warnings
+
+### Phase 2 starting point (first priorities)
+- Route-level role enforcement (`RouteGuard` reading `handle.access`) — unblocked by Part 2 type fix
+- `formatLastActivity` i18n — translation pipeline work
+- `ParentProfile` auto-creation on registration (admin-managed only in Phase 1)
+- Server-side pagination and filtering on admin list pages
 
 See [Phase 1 Section 10 Readiness Checklist](docs/development/phase1-section10-readiness.md).
+
+---
+
+## Phase 1 — Section 11 Status
+
+**AI Tutor MVP Boundaries and Architecture Foundations** — Part 1 complete.
+
+### Part 1 — Architecture foundations (current)
+- Defined `ITutorService` interface with explicit data ownership docs and hard boundaries.
+- Created `TutorContextSnapshot` record encoding the context assembly contract (`CorrectAnswer` absent at the type level).
+- Created `TutorBoundaryNotes.cs` — call architecture, MVP scope, data ownership, and safety constraints as co-located code comments.
+- Created `TutorController` stub under `[Authorize(Roles = "Student")]` returning HTTP 501.
+- Created `ai-service/app/models/tutor.py` Pydantic models and `api/v1/tutor.py` route stub (501).
+- Wired tutor router into `ai-service/app/api/router.py`.
+- No breaking changes; all 168 backend tests continue to pass.
+
+### Part 2 — Service implementation (next)
+- Implement `TutorService`: enrollment check → context assembly → AI service HTTP call → persist `AiConversation` + `AiMessage`
+- Implement `ask_tutor` in AI service: lesson-grounded system prompt + LLM `complete()` call
+- Wire `HttpClient` in backend for AI service calls
+- Add integration tests for start / ask / end lifecycle
+
+### Current test counts
+- Backend: **168 tests** (70 domain + 12 application + 86 API integration) — all passing
+- Frontend: **47 tests** — all passing
+
+See [Phase 1 Section 11 Readiness](docs/development/phase1-section11-readiness.md).
 
 ---
 
@@ -411,6 +461,7 @@ See [Phase 1 Section 10 Readiness Checklist](docs/development/phase1-section10-r
 - [Phase 1 Section 8 Readiness Checklist](docs/development/phase1-section8-readiness.md)
 - [Phase 1 Section 9 Readiness Checklist](docs/development/phase1-section9-readiness.md)
 - [Phase 1 Section 10 Readiness Checklist](docs/development/phase1-section10-readiness.md)
+- [Phase 1 Section 11 Readiness](docs/development/phase1-section11-readiness.md)
 
 ### Frontend
 - [Frontend UI Foundation](docs/frontend/ui-foundation.md)

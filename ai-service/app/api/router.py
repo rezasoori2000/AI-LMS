@@ -14,6 +14,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from app.api.v1.health import router as health_router
+from app.api.v1.tutor import router as tutor_router
 
 # ── Top-level unversioned routes ─────────────────────────────────────────────
 # /health is intentionally NOT under /api/v1 so Kubernetes probes and load
@@ -24,9 +25,10 @@ api_router.include_router(health_router)
 # ── Versioned routes (/api/v1/...) ───────────────────────────────────────────
 v1_router = APIRouter(prefix="/api/v1")
 
-# TODO (Phase 2): Add feature routers here, e.g.:
-# from app.api.v1.tutor import router as tutor_router
-# v1_router.include_router(tutor_router, prefix="/tutor", tags=["Tutor"])
+# Section 11 Part 1: Tutor endpoint stub (returns 501 until Part 2 wires LLM)
+v1_router.include_router(tutor_router, prefix="/tutor", tags=["Tutor"])
+
+# TODO (Phase 2+): Add remaining feature routers here, e.g.:
 #
 # from app.api.v1.scoring import router as scoring_router
 # v1_router.include_router(scoring_router, prefix="/scoring", tags=["Scoring"])

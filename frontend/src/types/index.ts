@@ -24,16 +24,36 @@ export interface User {
 
 // ── Auth payloads & responses ────────────────────────────────
 
-/** Integer values match the backend UserRole enum order. */
+/**
+ * String values matching the backend UserRole enum names as serialized by
+ * JsonStringEnumConverter (e.g. "Student", not the integer 5).
+ * Used for request bodies and response parsing.
+ */
 export const BackendUserRole = {
-  SuperAdmin:    0,
-  TenantAdmin:   1,
-  ContentEditor: 2,
-  Teacher:       3,
-  Parent:        4,
-  Student:       5,
+  SuperAdmin:    'SuperAdmin',
+  TenantAdmin:   'TenantAdmin',
+  ContentEditor: 'ContentEditor',
+  Teacher:       'Teacher',
+  Parent:        'Parent',
+  Student:       'Student',
 } as const
 export type BackendUserRoleValue = (typeof BackendUserRole)[keyof typeof BackendUserRole]
+
+/**
+ * Maps a backend role string (e.g. "SuperAdmin") to the frontend UserRole
+ * string used by nav config, route handles, and ProtectedRoute.
+ */
+export function toFrontendRole(role: BackendUserRoleValue): UserRole {
+  const map: Record<BackendUserRoleValue, UserRole> = {
+    SuperAdmin:    'super_admin',
+    TenantAdmin:   'tenant_admin',
+    ContentEditor: 'content_editor',
+    Teacher:       'teacher',
+    Parent:        'parent',
+    Student:       'student',
+  }
+  return map[role]
+}
 
 export interface LoginPayload {
   email: string
@@ -45,7 +65,7 @@ export interface RegisterPayload {
   password: string
   firstName: string
   lastName: string
-  /** Integer matching BackendUserRole. */
+  /** String matching the backend UserRole enum name, e.g. "Student". */
   role: BackendUserRoleValue
   tenantId?: string | null
 }

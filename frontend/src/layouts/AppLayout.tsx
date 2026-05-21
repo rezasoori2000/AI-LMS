@@ -1,7 +1,9 @@
 import { Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { AppShell } from '@/components/layout/AppShell'
-import { DEFAULT_NAV_ITEMS } from '@/config/nav'
+import { DEFAULT_NAV_ITEMS, NAV_ITEMS_BY_ROLE } from '@/config/nav'
+import { useAuth } from '@/context/AuthContext'
+import { toFrontendRole } from '@/types'
 
 /**
  * AppLayout — authenticated application shell.
@@ -9,9 +11,9 @@ import { DEFAULT_NAV_ITEMS } from '@/config/nav'
  * Wraps all authenticated routes with AppShell (Topbar + Sidebar + main).
  *
  * Nav items:
- * - Currently passes DEFAULT_NAV_ITEMS (all dashboards) since there is no auth yet.
- * - Section 2: replace with `NAV_ITEMS_BY_ROLE[currentUser.role]` once the
- *   auth context is available.
+ * - Resolved from NAV_ITEMS_BY_ROLE using the authenticated user's role.
+ * - Falls back to DEFAULT_NAV_ITEMS when no user is present (should not happen
+ *   in practice because AppLayout is always nested inside ProtectedRoute).
  *
  * Skip-link:
  * - Visible only on keyboard focus (sr-only focus:not-sr-only pattern).
@@ -22,7 +24,11 @@ import { DEFAULT_NAV_ITEMS } from '@/config/nav'
  * The <Outlet /> renders the matched child route (dashboard page, etc.).
  */
 export default function AppLayout() {
-  const { t } = useTranslation()
+  const { t }    = useTranslation()
+  const { user } = useAuth()
+  const navItems = user
+    ? (NAV_ITEMS_BY_ROLE[toFrontendRole(user.role)] ?? DEFAULT_NAV_ITEMS)
+    : DEFAULT_NAV_ITEMS
 
   return (
     <>
@@ -39,7 +45,7 @@ export default function AppLayout() {
         {t('nav.skipToContent')}
       </a>
 
-      <AppShell navItems={DEFAULT_NAV_ITEMS}>
+      <AppShell navItems={navItems}>
         <Outlet />
       </AppShell>
     </>

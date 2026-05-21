@@ -10,14 +10,11 @@ namespace LMS.Api.Controllers;
 ///
 /// All endpoints are <see cref="AllowAnonymousAttribute"/> by design: callers do not
 /// yet have a token when they reach these routes.
-///
-/// Part 1 implementation: stubs returning 501 Not Implemented.
-/// Real logic is wired in Phase 1 Section 3 Part 2 when <see cref="IAuthService"/>
-/// is implemented and registered.
 /// </summary>
+[ApiController]
 [AllowAnonymous]
 [Route("api/auth")]
-public sealed class AuthController : BaseApiController
+public sealed class AuthController : ControllerBase
 {
     private readonly IAuthService _auth;
 

@@ -23,11 +23,16 @@ All seed accounts share the password **`Seed@1234!`**.
 | `superadmin@lms.dev` | SuperAdmin | Platform-level, no tenant |
 | `admin@lms.dev` | TenantAdmin | |
 | `editor@lms.dev` | ContentEditor | |
-| `teacher@lms.dev` | Teacher | |
+| `teacher@lms.dev` | Teacher | No students assigned — use admin UI to assign |
 | `parent.a@lms.dev` | Parent | Linked to student.a |
 | `parent.b@lms.dev` | Parent | Linked to student.b |
 | `student.a@lms.dev` | Student | Enrolled in Mathematics + English; has progress records |
 | `student.b@lms.dev` | Student | Enrolled in Mathematics only |
+
+> **Note on teacher accounts**: `teacher@lms.dev` logs in successfully but sees an empty
+> student list by default. Teacher–student assignments are admin-managed and not included
+> in the seed data (deferred to Phase 3 automatic seeding). To test the teacher portal,
+> log in as `admin@lms.dev` and assign a student via the Students page.
 
 ---
 

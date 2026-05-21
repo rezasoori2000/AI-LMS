@@ -2,8 +2,11 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using LMS.Application.Teacher.Dtos;
+using LMS.Domain.Students;
 using LMS.Domain.Users;
+using LMS.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace LMS.Api.Tests;
 
@@ -76,6 +79,66 @@ public sealed class TeacherIntegrationTests : IClassFixture<LmsWebApplicationFac
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
         return client;
+    }
+
+    private async Task<(HttpClient Client, Guid UserId)> CreateAuthorizedClientWithIdAsync(
+        string email, UserRole role)
+    {
+        var client = CreateClient();
+
+        var register = await client.PostAsJsonAsync("/api/auth/register", new
+        {
+            Email     = email,
+            Password  = "Test@1234!",
+            FirstName = "Test",
+            LastName  = "User",
+            Role      = (int)role,
+        });
+
+        if (register.StatusCode != HttpStatusCode.Created
+         && register.StatusCode != HttpStatusCode.Conflict)
+            throw new Exception($"Register failed: {register.StatusCode}");
+
+        var regBody = await register.Content.ReadFromJsonAsync<JsonElement>();
+        var userId  = Guid.Parse(regBody.GetProperty("userId").GetString()!);
+
+        var login = await client.PostAsJsonAsync("/api/auth/login", new
+        {
+            Email    = email,
+            Password = "Test@1234!",
+        });
+
+        login.EnsureSuccessStatusCode();
+
+        var payload = await login.Content.ReadFromJsonAsync<JsonElement>();
+        var token   = payload.GetProperty("accessToken").GetString()!;
+
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        return (client, userId);
+    }
+
+    private async Task<Guid> SeedStudentProfileAsync(Guid userId)
+    {
+        using var scope   = _factory.Services.CreateScope();
+        var       db      = scope.ServiceProvider.GetRequiredService<LmsDbContext>();
+        var       profile = StudentProfile.Create(userId);
+        db.StudentProfiles.Add(profile);
+        await db.SaveChangesAsync();
+        return profile.Id;
+    }
+
+    private async Task SeedTeacherAssignmentAsync(Guid teacherUserId, Guid studentProfileId)
+    {
+        using var scope      = _factory.Services.CreateScope();
+        var       db         = scope.ServiceProvider.GetRequiredService<LmsDbContext>();
+        var       assignment = TeacherStudentAssignment.Create(
+                                   teacherUserId,
+                                   studentProfileId,
+                                   assignedByUserId: Guid.NewGuid());
+        db.TeacherStudentAssignments.Add(assignment);
+        await db.SaveChangesAsync();
     }
 
     // ── GET /api/teacher/summary ──────────────────────────────────────────────
@@ -236,6 +299,83 @@ public sealed class TeacherIntegrationTests : IClassFixture<LmsWebApplicationFac
             "teacher-profile-check@example.com", UserRole.Teacher);
 
         var response = await client.GetAsync("/api/teacher/summary");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    // ── Happy-path and cross-isolation ────────────────────────────────────────
+
+    [Fact]
+    public async Task GetMyStudents_WithAssignedStudent_Returns200WithStudent()
+    {
+        var (teacherClient, teacherUserId) = await CreateAuthorizedClientWithIdAsync(
+            "teacher-happy-list@example.com", UserRole.Teacher);
+        var (_, studentUserId) = await CreateAuthorizedClientWithIdAsync(
+            "student-for-teacher-list@example.com", UserRole.Student);
+
+        var studentProfileId = await SeedStudentProfileAsync(studentUserId);
+        await SeedTeacherAssignmentAsync(teacherUserId, studentProfileId);
+
+        var response = await teacherClient.GetAsync("/api/teacher/students");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var body = await response.Content
+            .ReadFromJsonAsync<List<AssignedStudentSummaryDto>>(JsonOpts);
+        Assert.NotNull(body);
+        Assert.Contains(body, s => s.StudentId == studentProfileId);
+    }
+
+    [Fact]
+    public async Task GetStudentDetail_AssignedStudent_Returns200()
+    {
+        var (teacherClient, teacherUserId) = await CreateAuthorizedClientWithIdAsync(
+            "teacher-happy-detail@example.com", UserRole.Teacher);
+        var (_, studentUserId) = await CreateAuthorizedClientWithIdAsync(
+            "student-for-teacher-detail@example.com", UserRole.Student);
+
+        var studentProfileId = await SeedStudentProfileAsync(studentUserId);
+        await SeedTeacherAssignmentAsync(teacherUserId, studentProfileId);
+
+        var response = await teacherClient.GetAsync(
+            $"/api/teacher/students/{studentProfileId}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetStudentDetail_OtherTeachersStudent_Returns403()
+    {
+        // Teacher A's student must not be visible to Teacher B.
+        var (_, teacherAUserId) = await CreateAuthorizedClientWithIdAsync(
+            "teacher-a-isolation@example.com", UserRole.Teacher);
+        var (teacherBClient, _) = await CreateAuthorizedClientWithIdAsync(
+            "teacher-b-isolation@example.com", UserRole.Teacher);
+        var (_, studentUserId) = await CreateAuthorizedClientWithIdAsync(
+            "student-teacher-isolation@example.com", UserRole.Student);
+
+        var studentProfileId = await SeedStudentProfileAsync(studentUserId);
+        await SeedTeacherAssignmentAsync(teacherAUserId, studentProfileId);
+
+        var response = await teacherBClient.GetAsync(
+            $"/api/teacher/students/{studentProfileId}");
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetStudentProgress_AssignedStudent_Returns200()
+    {
+        var (teacherClient, teacherUserId) = await CreateAuthorizedClientWithIdAsync(
+            "teacher-happy-progress@example.com", UserRole.Teacher);
+        var (_, studentUserId) = await CreateAuthorizedClientWithIdAsync(
+            "student-for-teacher-progress@example.com", UserRole.Student);
+
+        var studentProfileId = await SeedStudentProfileAsync(studentUserId);
+        await SeedTeacherAssignmentAsync(teacherUserId, studentProfileId);
+
+        var response = await teacherClient.GetAsync(
+            $"/api/teacher/students/{studentProfileId}/progress");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }

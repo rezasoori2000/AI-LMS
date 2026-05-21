@@ -147,7 +147,7 @@ public sealed class ParentService : IParentService
             .AsNoTracking()
             .Include(e => e.Subject)
             .Where(e => e.StudentId == studentId)
-            .OrderBy(e => e.EnrolledAt)
+            .OrderByDescending(e => e.EnrolledAt)
             .ToListAsync(ct);
 
         if (enrollments.Count == 0)

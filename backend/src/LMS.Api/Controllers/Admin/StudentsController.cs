@@ -50,7 +50,7 @@ public sealed class StudentsController : ControllerBase
     [HttpPatch("{studentId:guid}/parent")]
     public async Task<IActionResult> AssignParent(
         Guid                studentId,
-        AssignParentRequest request,
+        [FromBody] AssignParentRequest request,
         CancellationToken   ct)
         => Ok(await _students.AssignParentAsync(studentId, request, ct));
 
@@ -64,7 +64,7 @@ public sealed class StudentsController : ControllerBase
     [HttpPatch("{studentId:guid}/teacher")]
     public async Task<IActionResult> AssignTeacher(
         Guid                 studentId,
-        AssignTeacherRequest request,
+        [FromBody] AssignTeacherRequest request,
         CancellationToken    ct)
         => Ok(await _students.AssignTeacherAsync(studentId, request, ct));
 }

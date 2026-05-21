@@ -2,8 +2,11 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using LMS.Application.Parent.Dtos;
+using LMS.Domain.Students;
 using LMS.Domain.Users;
+using LMS.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace LMS.Api.Tests;
 
@@ -72,6 +75,90 @@ public sealed class ParentIntegrationTests : IClassFixture<LmsWebApplicationFact
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
         return client;
+    }
+
+    private async Task<(HttpClient Client, Guid UserId)> CreateAuthorizedClientWithIdAsync(
+        string email, UserRole role)
+    {
+        var client = CreateClient();
+
+        var register = await client.PostAsJsonAsync("/api/auth/register", new
+        {
+            Email     = email,
+            Password  = "Test@1234!",
+            FirstName = "Test",
+            LastName  = "User",
+            Role      = (int)role,
+        });
+
+        if (register.StatusCode != HttpStatusCode.Created
+         && register.StatusCode != HttpStatusCode.Conflict)
+            throw new Exception($"Register failed: {register.StatusCode}");
+
+        var regBody = await register.Content.ReadFromJsonAsync<JsonElement>();
+        var userId  = Guid.Parse(regBody.GetProperty("userId").GetString()!);
+
+        var login = await client.PostAsJsonAsync("/api/auth/login", new
+        {
+            Email    = email,
+            Password = "Test@1234!",
+        });
+
+        login.EnsureSuccessStatusCode();
+
+        var payload = await login.Content.ReadFromJsonAsync<JsonElement>();
+        var token   = payload.GetProperty("accessToken").GetString()!;
+
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        return (client, userId);
+    }
+
+    /// <summary>
+    /// Retrieves the ParentProfile.Id for the given user. AuthService creates the
+    /// profile automatically during registration, so it always exists after a Parent user
+    /// is registered.
+    /// </summary>
+    private Guid GetParentProfileId(Guid userId)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var       db    = scope.ServiceProvider.GetRequiredService<LmsDbContext>();
+        return db.ParentProfiles.First(p => p.UserId == userId).Id;
+    }
+
+    /// <summary>
+    /// Registers a student user and seeds a StudentProfile linked to the given parent.
+    /// Returns the StudentProfile.Id.
+    /// </summary>
+    private async Task<Guid> SeedStudentLinkedToParentAsync(
+        Guid   parentProfileId,
+        string studentEmail)
+    {
+        using var httpClient = CreateClient();
+        var register = await httpClient.PostAsJsonAsync("/api/auth/register", new
+        {
+            Email     = studentEmail,
+            Password  = "Test@1234!",
+            FirstName = "Child",
+            LastName  = "Linked",
+            Role      = (int)UserRole.Student,
+        });
+
+        if (register.StatusCode != HttpStatusCode.Created
+         && register.StatusCode != HttpStatusCode.Conflict)
+            throw new Exception($"Student register failed: {register.StatusCode}");
+
+        var regBody   = await register.Content.ReadFromJsonAsync<JsonElement>();
+        var studentId = Guid.Parse(regBody.GetProperty("userId").GetString()!);
+
+        using var scope   = _factory.Services.CreateScope();
+        var       db      = scope.ServiceProvider.GetRequiredService<LmsDbContext>();
+        var       profile = StudentProfile.Create(studentId, parentId: parentProfileId);
+        db.StudentProfiles.Add(profile);
+        await db.SaveChangesAsync();
+
+        return profile.Id;
     }
 
     // ── GET /api/parent/children ──────────────────────────────────────────────
@@ -163,5 +250,62 @@ public sealed class ParentIntegrationTests : IClassFixture<LmsWebApplicationFact
 
         // 200 (not 500) confirms the ParentProfile was created and resolved.
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    // ── Happy-path and cross-isolation ────────────────────────────────────────
+
+    [Fact]
+    public async Task GetChildren_LinkedChild_Returns200WithChild()
+    {
+        var (parentClient, parentUserId) = await CreateAuthorizedClientWithIdAsync(
+            "parent-happy-list@example.com", UserRole.Parent);
+
+        var parentProfileId  = GetParentProfileId(parentUserId);
+        var studentProfileId = await SeedStudentLinkedToParentAsync(
+            parentProfileId, "child-for-parent-list@example.com");
+
+        var response = await parentClient.GetAsync("/api/parent/children");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var body = await response.Content
+            .ReadFromJsonAsync<List<ChildSummaryDto>>(JsonOpts);
+        Assert.NotNull(body);
+        Assert.Contains(body, c => c.StudentId == studentProfileId);
+    }
+
+    [Fact]
+    public async Task GetChildDetail_LinkedChild_Returns200()
+    {
+        var (parentClient, parentUserId) = await CreateAuthorizedClientWithIdAsync(
+            "parent-happy-detail@example.com", UserRole.Parent);
+
+        var parentProfileId  = GetParentProfileId(parentUserId);
+        var studentProfileId = await SeedStudentLinkedToParentAsync(
+            parentProfileId, "child-for-parent-detail@example.com");
+
+        var response = await parentClient.GetAsync(
+            $"/api/parent/children/{studentProfileId}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetChildDetail_AnotherParentsChild_Returns403()
+    {
+        // Parent A's child must not be accessible by Parent B.
+        var (_, parentAUserId) = await CreateAuthorizedClientWithIdAsync(
+            "parent-a-isolation@example.com", UserRole.Parent);
+        var (parentBClient, _) = await CreateAuthorizedClientWithIdAsync(
+            "parent-b-isolation@example.com", UserRole.Parent);
+
+        var parentAProfileId = GetParentProfileId(parentAUserId);
+        var studentProfileId = await SeedStudentLinkedToParentAsync(
+            parentAProfileId, "child-for-parent-isolation@example.com");
+
+        var response = await parentBClient.GetAsync(
+            $"/api/parent/children/{studentProfileId}");
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 }

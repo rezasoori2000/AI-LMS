@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using LMS.Application.Student.Dtos;
+using LMS.Domain.Catalog;
 using LMS.Domain.Curriculum;
 using LMS.Domain.Enrollments;
 using LMS.Domain.Students;
@@ -134,6 +135,27 @@ public sealed class StudentIntegrationTests : IClassFixture<LmsWebApplicationFac
         await db.SaveChangesAsync();
 
         return (subject.Id, chapter.Id, lesson.Id, enrollment.Id);
+    }
+
+    /// <summary>
+    /// Seeds one MultipleChoice question for the given lesson.
+    /// Returns the question Id and the correct answer string ("0" = first option index).
+    /// </summary>
+    private async Task<(Guid QuestionId, string CorrectAnswer)> SeedMCQuestionAsync(
+        Guid lessonId)
+    {
+        using var scope    = _factory.Services.CreateScope();
+        var       db       = scope.ServiceProvider.GetRequiredService<LmsDbContext>();
+        var       question = Question.Create(
+                                 text:          "What is 2 + 2?",
+                                 type:          QuestionType.MultipleChoice,
+                                 difficulty:    DifficultyLevel.Easy,
+                                 correctAnswer: "0",
+                                 lessonId:      lessonId,
+                                 optionsJson:   "[\"4\",\"3\",\"5\",\"6\"]");
+        db.Questions.Add(question);
+        await db.SaveChangesAsync();
+        return (question.Id, question.CorrectAnswer);
     }
 
     // ── GET /api/student/summary ──────────────────────────────────────────────
@@ -435,5 +457,85 @@ public sealed class StudentIntegrationTests : IClassFixture<LmsWebApplicationFac
             new { Answers = Array.Empty<object>() });
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    // ── Security: CorrectAnswer must never leave the server ─────────────────────
+
+    [Fact]
+    public async Task GetLessonDetail_WithMCQuestion_CorrectAnswerNotInResponse()
+    {
+        var (client, userId) = await CreateAuthorizedClientAsync(
+            "student-qa-no-correct@example.com", UserRole.Student);
+
+        var profileId = await SeedStudentProfileAsync(userId);
+        var (_, _, lessonId, _) = await SeedEnrolledContentAsync(profileId);
+        await SeedMCQuestionAsync(lessonId);
+
+        var response = await client.GetAsync($"/api/student/lessons/{lessonId}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        // Inspect raw JSON — CorrectAnswer must not appear in any question element.
+        var body      = await response.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
+        var questions = body.GetProperty("questions");
+        Assert.Equal(JsonValueKind.Array, questions.ValueKind);
+        Assert.True(questions.GetArrayLength() > 0, "Expected at least one question in lesson");
+
+        foreach (var q in questions.EnumerateArray())
+        {
+            Assert.False(
+                q.TryGetProperty("correctAnswer", out _),
+                "correctAnswer must not be returned to the student");
+        }
+    }
+
+    // ── QuestionAnswerRecord persistence ────────────────────────────────────────
+
+    [Fact]
+    public async Task CompleteLesson_WithMCQuestion_PersistsQuestionAnswerRecord()
+    {
+        var (client, userId) = await CreateAuthorizedClientAsync(
+            "student-qar-persist@example.com", UserRole.Student);
+
+        var profileId = await SeedStudentProfileAsync(userId);
+        var (_, _, lessonId, _) = await SeedEnrolledContentAsync(profileId);
+        var (questionId, _) = await SeedMCQuestionAsync(lessonId);
+
+        await client.PostAsync($"/api/student/lessons/{lessonId}/start", null);
+        await client.PostAsJsonAsync(
+            $"/api/student/lessons/{lessonId}/complete",
+            new { Answers = new[] { new { QuestionId = questionId, Answer = "0" } } });
+
+        using var scope   = _factory.Services.CreateScope();
+        var       db      = scope.ServiceProvider.GetRequiredService<LmsDbContext>();
+        var       count   = db.QuestionAnswerRecords
+                               .Count(r => r.StudentId == profileId && r.QuestionId == questionId);
+
+        Assert.Equal(1, count);
+    }
+
+    // ── Scoring ───────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task CompleteLesson_WithCorrectAnswer_ScoreIs100Percent()
+    {
+        var (client, userId) = await CreateAuthorizedClientAsync(
+            "student-score-100@example.com", UserRole.Student);
+
+        var profileId = await SeedStudentProfileAsync(userId);
+        var (_, _, lessonId, _) = await SeedEnrolledContentAsync(profileId);
+        var (questionId, correctAnswer) = await SeedMCQuestionAsync(lessonId);
+
+        await client.PostAsync($"/api/student/lessons/{lessonId}/start", null);
+
+        var response = await client.PostAsJsonAsync(
+            $"/api/student/lessons/{lessonId}/complete",
+            new { Answers = new[] { new { QuestionId = questionId, Answer = correctAnswer } } });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var body = await response.Content.ReadFromJsonAsync<CompleteResponse>(JsonOpts);
+        Assert.NotNull(body);
+        Assert.Equal(100m, body.ScorePercent);
     }
 }

@@ -103,6 +103,18 @@ dotnet test tests/LMS.Api.Tests      # API integration tests only
 dotnet test tests/LMS.Domain.Tests   # domain unit tests only
 ```
 
+Database migrations (requires PostgreSQL running):
+
+```bash
+# Apply all pending migrations
+dotnet ef database update --project src/LMS.Infrastructure --startup-project src/LMS.Api
+
+# Add a new migration
+dotnet ef migrations add <Name> --project src/LMS.Infrastructure --startup-project src/LMS.Api
+```
+
+Integration tests use an InMemory database and do not require PostgreSQL.
+
 ### AI Service (FastAPI / Python)
 
 ```bash
@@ -152,6 +164,12 @@ Key variables:
 | `AI_DEFAULT_PROVIDER` | `ollama` | Which LLM provider the AI service uses |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama endpoint |
 | `OPENAI_API_KEY` | *(empty)* | OpenAI API key (Phase 2+) |
+
+> **JWT secret requirement**: In `Production` and `Staging` environments,
+> `BACKEND_JWT_SECRET` must be present and at least 32 characters long.
+> The application will refuse to start if this condition is not met.
+> In `Development`, a warning is logged but startup continues.
+> The default value in `.env.example` is a placeholder — replace it before any deployment.
 
 See `.env.example` for the full list.
 

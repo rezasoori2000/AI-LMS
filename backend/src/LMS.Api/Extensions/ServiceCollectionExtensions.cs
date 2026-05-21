@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json.Serialization;
 using LMS.Application.Admin.Students;
+using LMS.Application.AiTutor;
 using LMS.Application.Auth;
 using LMS.Application.Content.Chapters;
 using LMS.Application.Content.Grades;
@@ -11,6 +12,7 @@ using LMS.Application.Parent;
 using LMS.Application.Student;
 using LMS.Application.Teacher;
 using LMS.Infrastructure;
+using LMS.Infrastructure.AI;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -41,6 +43,33 @@ public static class ServiceCollectionExtensions
             .Get<JwtSettings>();
 
         var secretKey = jwtSettings?.SecretKey ?? string.Empty;
+
+        // Guard: a JWT secret of fewer than 32 characters is either missing or too short to
+        // be cryptographically safe.  In Production (and any other non-Development, non-Testing
+        // environment) this is a hard startup failure — allowing the application to start with
+        // validation disabled would permit any crafted token to be accepted as authenticated.
+        // In Testing the integration-test factory overrides TokenValidationParameters via
+        // PostConfigure, so the IConfiguration key is intentionally absent; we skip silently.
+        // In Development a critical log warns the developer without blocking startup.
+        if (secretKey.Length < 32)
+        {
+            var isLocalEnv = environment.IsDevelopment() || environment.IsEnvironment("Testing");
+            if (!isLocalEnv)
+                throw new InvalidOperationException(
+                    "Jwt:SecretKey must be at least 32 characters. " +
+                    "Supply it via the Jwt__SecretKey environment variable or a secrets manager. " +
+                    "Never commit a real key to source control.");
+
+            if (environment.IsDevelopment())
+            {
+                var startupLogger = LoggerFactory
+                    .Create(lb => lb.AddConsole())
+                    .CreateLogger("LMS.Api.Extensions.ServiceCollectionExtensions");
+                startupLogger.LogCritical(
+                    "[Security] Jwt:SecretKey is missing or shorter than 32 characters. " +
+                    "JWT signature validation is disabled. Acceptable only in local Development.");
+            }
+        }
 
         services
             .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -149,6 +178,12 @@ public static class ServiceCollectionExtensions
 
         // ── Teacher portal services ───────────────────────────────────────
         services.AddScoped<ITeacherService, TeacherService>();
+
+        // ── AI Tutor services ─────────────────────────────────────────────
+        // StubTutorProvider returns a placeholder response (no LLM call).
+        // Phase 2: swap to services.AddScoped<ITutorProvider, OllamaTutorProvider>();
+        services.AddScoped<ITutorProvider, StubTutorProvider>();
+        services.AddScoped<ITutorService,  TutorService>();
 
         return services;
     }

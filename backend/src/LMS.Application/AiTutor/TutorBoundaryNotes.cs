@@ -61,7 +61,8 @@ namespace LMS.Application.AiTutor;
 //    - Student first name (tone personalization — no last name in AI payloads)
 //    - Lesson title, content (full plain text), grade name, subject name
 //    - Lesson progress status ("NotStarted" | "InProgress" | "Completed")
-//    - Conversation history for the current session (rolling window ~20 turns)
+//    - Conversation history for the current session (all messages sent; AI service
+//      prompt builder caps usage at HISTORY_WINDOW_TURNS = 10 turns)
 //
 //  ADDED ONLY for hint requests (HintForQuestionId ≠ null):
 //    - Question text
@@ -112,8 +113,8 @@ namespace LMS.Application.AiTutor;
 //    - Is NOT internet-facing (internal service-to-service only)
 //    - Does NOT perform auth (backend already authenticated the student)
 //    - DOES validate input via Pydantic before processing
-//    - Returns HTTP 503 when the LLM provider is unavailable
-//    - Returns HTTP 501 until Section 11, Part 2 wires the real provider call
+//    - Returns HTTP 503 when the LLM provider is unavailable or not configured
+//    - Returns HTTP 422 for malformed request bodies (Pydantic validation)
 //
 // ── Safety constraints ────────────────────────────────────────────────────────
 //
@@ -125,8 +126,8 @@ namespace LMS.Application.AiTutor;
 //  2. Student message length: capped at 1,000 characters (validated in the
 //     backend before forwarding; Pydantic also validates in the AI service).
 //
-//  3. AI response length: capped at 2,000 tokens in the LLM call (Phase 2
-//     implementation detail in the provider call inside TutorService).
+//  3. AI response length: capped at 600 tokens (TUTOR_MAX_RESPONSE_TOKENS in
+//     ai-service/app/core/tutor_prompts.py). Enough for 2–4 paragraphs.
 //
 //  4. CorrectAnswer must NEVER reach the AI service. Context assembly
 //     (assembler) is the primary defense; prompt engineering is the second.

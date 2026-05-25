@@ -1,217 +1,185 @@
-# Phase 1 — Section 11 Readiness: AI Tutor MVP Boundaries and Architecture
+# Phase 1 — Section 11 Readiness: AI Tutor MVP Closeout
 
 ## Summary
 
-Section 11, Part 1 establishes the **architecture foundations** for the AI tutor feature. No live LLM calls are made in Part 1. The work defines boundaries, interfaces, context assembly contracts, and stub endpoints so that Part 2 can implement the actual tutor logic without touching these architectural decisions again.
+Section 11 is complete through Part 5. The AI tutor MVP foundation is coherent,
+testable, and scoped narrowly around lesson-grounded student help.
 
-**Status: Part 1 complete — architecture defined, stubs returning HTTP 501**
+Current posture:
 
----
+- MVP boundaries are explicit in code and docs
+- Backend orchestration is implemented and ownership-safe
+- AI service guardrails are implemented and tested
+- Student-facing tutor UI flow is implemented (narrow one-reply loop)
+- High-risk scope expansion remains explicitly deferred
 
-## Part 1 — Architecture Foundations
-
-### What Was Built
-
-| Layer | File | Purpose |
-|-------|------|---------|
-| Application | `LMS.Application/AiTutor/TutorDtos.cs` | Request/response record types |
-| Application | `LMS.Application/AiTutor/TutorContextSnapshot.cs` | Context assembly contract |
-| Application | `LMS.Application/AiTutor/ITutorService.cs` | Service interface with data boundary docs |
-| Application | `LMS.Application/AiTutor/TutorBoundaryNotes.cs` | Architecture decisions as code comments |
-| API | `LMS.Api/Controllers/Student/TutorController.cs` | Stub controller (returns 501) |
-| AI Service | `ai-service/app/models/tutor.py` | Pydantic models (service-to-service contract) |
-| AI Service | `ai-service/app/api/v1/tutor.py` | Route stub (returns 501) |
-| AI Service | `ai-service/app/api/router.py` | Wired tutor router |
-
-**No new tests added in Part 1.** Tests will be added in Part 2 when there is real behaviour to assert.
-
-**Build validation**: `dotnet build LMS.sln` — 0 errors, 0 warnings  
-**Test regression**: `dotnet test LMS.sln` — 168/168 passed
+Status: **Section 11 complete; ready to move to the next section**
 
 ---
 
-## MVP Scope Decision
+## What Was Validated
 
-The following table records what is included in the AI tutor MVP and what is deferred. These decisions are also encoded in `TutorBoundaryNotes.cs`.
+### 1. Tutor MVP boundaries
 
-### Included (Section 11 Parts 2+)
+Validated in:
 
-| Feature | Rationale |
-|---------|-----------|
-| Ask free-text questions about the current lesson | Core tutoring loop |
-| Request a hint for a specific question | Scaffolded learning without answer-giving |
-| Request a simpler re-explanation of lesson content | Differentiation for struggling students |
-| Multi-turn conversation within a session | Needed for useful tutoring dialogue |
-| Session start / end lifecycle | Maps to `AiConversation.StartedAt` / `EndedAt` |
-| Conversation history persisted per session | Enables coherent multi-turn responses |
+- `backend/src/LMS.Application/AiTutor/TutorBoundaryNotes.cs`
+- `docs/ai-tutor-mvp.md`
 
-### Deferred
+Confirmed:
 
-| Feature | Deferred To | Reason |
-|---------|-------------|--------|
-| LearnerProfile / TopicMasterySnapshot context | Phase 3 | Those domain entities do not exist yet |
-| Cross-session learner memory | Phase 3 | Requires LearnerProfile |
-| Streaming responses | Phase 3 nice-to-have | Infrastructure complexity; MVP doesn't need it |
-| Vector-search / RAG pipeline | Phase 3 | Significant infrastructure; not needed for lesson-grounded MVP |
-| ShortAnswer AI grading | Phase 3 | Grading is owned by `IStudentService`; complex to do correctly |
-| AI-generated questions | Out of scope | Not requested; would require separate moderation pipeline |
-| Autonomous academic record mutation | Never | `IStudentService` owns `LessonProgress`, `QuestionAnswerRecord`, `Enrollment` |
-| Parent or teacher notifications from tutor | Never | Portal messaging is a separate domain feature |
-| Emotional support / counseling | Never | Outside safe MVP scope; liability concerns |
-| Open-domain chat beyond the lesson | Never | Would undermine the lesson-grounded learning model |
+- Tutor role is limited to the current lesson
+- Direct-answer refusal is a hard rule
+- Open-domain chat is out of scope
+- Tutor does not own grading, progress state changes, or intervention workflows
 
----
+### 2. Backend orchestration skeleton
 
-## Architecture
+Validated in:
 
-### Call Pattern
+- `backend/src/LMS.Application/AiTutor/TutorService.cs`
+- `backend/src/LMS.Api/Controllers/Student/TutorController.cs`
 
-```
-Student browser
-    │  POST /api/student/tutor/sessions               (start session)
-    │  POST /api/student/tutor/sessions/{id}/ask      (send message)
-    │  POST /api/student/tutor/sessions/{id}/end      (end session)
-    ▼
-Backend API  [Authorize(Roles = "Student")]
-    │  TutorController  →  ITutorService (Part 2)
-    │  ├─ Auth: valid Student JWT required
-    │  ├─ Ownership: enrollment check → StudentAccessDeniedException (403)
-    │  ├─ Assemble TutorContextSnapshot (CorrectAnswer never included)
-    │  └─ HTTP POST to AI service (internal network only, not public)
-    ▼
-AI Service  (internal — no public auth, not internet-facing)
-    │  POST /api/v1/tutor/ask
-    │  Input: TutorAskPayload { context_snapshot, student_message }
-    ▼
-LLM Provider  (Ollama / OpenAI / Anthropic — Settings.ai_default_provider)
-    │  BaseLLMProvider.complete(prompt, system_prompt, max_tokens=2000)
-    ▼
-AI Service returns TutorAskResponse { reply, tokens_used }
-    │
-Backend persists AiMessage records via AiConversation.AddMessage()
-    │
-Backend returns TutorReplyDto to frontend
-```
+Confirmed:
 
-### Context Assembly Boundary
+- Session lifecycle is complete: start, ask, end
+- Enrollment and ownership checks are enforced before tutoring actions
+- Conversation-ended state returns 409 (`TutorConversationEndedException`)
+- Data writes are limited to `AiConversation` and `AiMessage`
 
-The `TutorContextSnapshot` record defines exactly what travels from backend to AI service. It encodes the security invariants at the type level:
+### 3. Lesson-grounded context assembly
 
-**Always included:**
-- `StudentFirstName` — tone personalization (first name only; no last name in AI payloads)
-- `LessonTitle`, `LessonContent`, `GradeName`, `SubjectName`
-- `LessonProgressStatus` — "NotStarted" | "InProgress" | "Completed"
-- `ConversationId` + `History` — current session messages only
+Validated in:
 
-**Added only for hint requests (`HintForQuestionId ≠ null`):**
-- `QuestionText`
-- `QuestionType` — "MultipleChoice" | "TrueFalse" | "ShortAnswer"
-- `QuestionOptions` — MC option texts (4 items)
-- **`CorrectAnswer` is absent — intentionally and permanently**
+- `backend/src/LMS.Application/AiTutor/TutorContextAssembler.cs`
+- `backend/src/LMS.Application/AiTutor/TutorContextSnapshot.cs`
 
-**Never included in any snapshot:**
-- `CorrectAnswer`
-- Other students' data
-- `LearnerProfile`, `TopicMasterySnapshot` (Phase 3)
-- Cross-session message history
-- Parent or teacher notes
+Confirmed:
 
-### Data Ownership
+- Context includes only lesson/student/session fields needed by the tutor
+- `CorrectAnswer` is excluded at query level and absent from DTO contract
+- Hint context includes question text/type/options only
 
-`ITutorService` owns:
+### 4. Student-facing lesson-help UI
 
-| Entity | Allowed operations |
-|--------|-------------------|
-| `AiConversation` | Create (StartSessionAsync), End (EndSessionAsync) |
-| `AiMessage` | Append via `AiConversation.AddMessage()` |
+Validated in:
 
-`ITutorService` reads (no writes):
+- `frontend/src/features/student/components/TutorPanel.tsx`
+- `frontend/src/features/student/hooks/useTutor.ts`
 
-| Entity | What is read |
-|--------|-------------|
-| `Lesson` | content, title, grade, subject |
-| `LessonProgress` | status only |
-| `Question` | text, type, options (never CorrectAnswer) |
-| `Enrollment` | active status check |
-| `StudentProfile` | id, first name, grade |
+Confirmed:
 
-`ITutorService` **never touches**:
-- `QuestionAnswerRecord` — owned by `IStudentService.CompleteLessonAsync`
-- `LessonProgress` writes — owned by `IStudentService`
-- Admin or teacher tables
+- Inline panel is lesson-scoped and low-friction
+- Session starts lazily on first ask
+- Session end is best-effort on unmount
+- UI remains intentionally narrow (single latest reply display)
+
+### 5. Response safety and guardrails
+
+Validated in:
+
+- `ai-service/app/core/tutor_prompts.py`
+- `ai-service/app/api/v1/tutor.py`
+- `ai-service/tests/test_tutor_prompts.py`
+
+Confirmed:
+
+- Guardrails are explicit system prompt rules (scope, refusal, limits, off-topic)
+- Redirect phrases are centralized constants and test-anchored
+- Prompt history is capped at 10 turns
+- AI service returns 503 for unconfigured/unavailable provider; 422 for invalid payload
 
 ---
 
-## Safety Constraints
+## Small Cleanup Items Found
 
-Encoded in `TutorBoundaryNotes.cs` and to be implemented in the Part 2 system prompt:
+### Fixed now in Part 5
 
-1. **Lesson-grounded prompt**: System prompt must instruct the model to answer only from lesson content. "You are a helpful tutor for `[LessonTitle]` only. If asked something outside this lesson, say 'That is outside our lesson for today' and redirect the student."
-2. **Message length cap**: Student messages max 1,000 characters. Validated by the backend and by Pydantic in the AI service.
-3. **Response length cap**: AI replies capped at 2,000 tokens in the LLM call parameters.
-4. **No CorrectAnswer**: Context assembly is the primary defense; prompt engineering is the secondary layer.
-5. **No behavioral telemetry on domain entities**: See `DesignNotes.cs` in `LMS.Domain/Personalization/` for the permanent exclusion list.
+- Updated stale values in `TutorBoundaryNotes.cs`:
+  - token cap corrected to 600
+  - history usage note aligned with 10-turn AI prompt cap
+  - endpoint behavior aligned to 503/422 (removed old 501 wording)
+- Updated stale comment in `TutorContextSnapshot.cs` to reflect current history behavior
+- Added consolidated architecture doc: `docs/ai-tutor-mvp.md`
+- Updated README Section 11 summary to reflect Parts 1-5 completion
 
----
+### Deferred intentionally
 
-## Part 1 Endpoint Contracts
-
-All three endpoints exist and are authorized. They return HTTP 501 until Part 2 wires `ITutorService`.
-
-| Method | Route | Request body | Success response |
-|--------|-------|-------------|-----------------|
-| `POST` | `/api/student/tutor/sessions` | `StartTutorSessionRequest(LessonId)` | `201` `StartTutorSessionResponse` |
-| `POST` | `/api/student/tutor/sessions/{id}/ask` | `TutorAskRequest(Message, HintForQuestionId?)` | `200` `TutorReplyDto` |
-| `POST` | `/api/student/tutor/sessions/{id}/end` | _(empty)_ | `204` |
-
-AI service internal endpoint:
-
-| Method | Route | Request body | Success response |
-|--------|-------|-------------|-----------------|
-| `POST` | `/api/v1/tutor/ask` | `TutorAskPayload(context_snapshot, student_message)` | `200` `TutorAskResponse` |
+- Backend history cap before serialization (currently all messages are sent, AI service caps at prompt-build time)
+- TutorPanel support for `hintForQuestionId` input path
+- Real provider integration and token usage reporting
 
 ---
 
-## Intentionally Not Added in Part 1
+## Readiness Checklist (Next AI-Focused Sections)
 
-| Item | Reason |
-|------|--------|
-| `TutorService.cs` implementation | Part 2 work; no LLM infrastructure wired yet |
-| Database migration for `AiConversation` / `AiMessage` | Domain entities already exist from a prior section; no schema change needed |
-| Integration tests for tutor endpoints | No meaningful behaviour to assert (stubs return 501); tests land in Part 2 |
-| Frontend tutor UI components | Section 12+ scope; backend contract must stabilize first |
-| Prompt templates | Part 2 implementation detail |
-| `ICurrentUserService` call in `TutorController` | Controller returns 501 before resolving identity; added in Part 2 |
+Before expanding tutor capabilities, verify:
 
----
-
-## Part 2 Implementation Checklist
-
-When implementing `TutorService` in Part 2, follow this order:
-
-1. **Create `TutorService.cs`** in `LMS.Application/AiTutor/` implementing `ITutorService`
-2. **Implement `StartSessionAsync`**: enrollment check → create `AiConversation` → persist → return `ConversationId`
-3. **Implement `AskAsync`**: ownership check → assemble `TutorContextSnapshot` → POST to AI service → persist both messages → return reply
-4. **Implement `EndSessionAsync`**: ownership check → call `AiConversation.End()` → persist
-5. **Register** `ITutorService → TutorService` in `ServiceCollectionExtensions.AddApplicationServices()` (TODO comment already in place)
-6. **Unwire the 501 stubs** in `TutorController` — replace with actual `_tutor.*` calls
-7. **Implement `ask_tutor`** in `ai-service/app/api/v1/tutor.py`:
-   - Build system prompt grounded in lesson content
-   - Format conversation history for the LLM context window
-   - Call `get_provider().complete(...)` with `max_tokens=2000, temperature=0.3`
-8. **Add `HttpClient`** configuration in backend to call the AI service (base URL from config)
-9. **Add integration tests**: start session → ask → verify 200 + reply shape; end session → verify idempotent
-10. **Add AI service tests**: valid payload → mock provider → assert `TutorAskResponse` shape
+- [ ] Replace `StubTutorProvider` with real provider wiring (`HttpTutorProvider` path)
+- [ ] Configure provider settings and secrets in ai-service config
+- [ ] Add backend integration coverage for full start → ask → end with real provider boundary
+- [ ] Cap history in backend before payload serialization to reduce long-session payload size
+- [ ] Add explicit UI path for `hintForQuestionId`
+- [ ] Validate refusal behavior against real provider outputs
+- [ ] Define token usage contract (non-null reporting when provider supports it)
+- [ ] Keep ownership boundaries: tutor still cannot mutate progress/grades/records
 
 ---
 
-## Perspectives
+## Intentional Deferrals
 
-### Maintainability
-The `TutorBoundaryNotes.cs` file co-locates the architecture contract with the production code, so the rules are visible during code review and in IDE symbol navigation — not buried in a separate docs folder. Future contributors implementing Part 2 will see the constraints before writing a single line.
+Deferred to later phases/sections:
 
-### Security
-The `CorrectAnswer` exclusion is enforced at two independent levels: the C# `TutorContextSnapshot` record (which has no `CorrectAnswer` property to populate), and the Python `TutorContextSnapshot` model (same absence). A developer would have to intentionally add the field to both models to violate this constraint.
+- Richer memory retrieval and cross-session learner memory
+- Multi-turn chat UI transcript and advanced session UX
+- Teacher/parent AI workflows and summaries
+- Broader personalization engines (`LearnerProfile`, `TopicMasterySnapshot` usage)
+- Assignment-aware tutoring and intervention workflows
+- Recommendation logic and advanced analytics
+- Production-grade LLM operations (streaming, observability, moderation pipelines)
 
-### Extensibility
-The `BaseTutoringService` stub in `ai-service/app/services/base.py` and the `ITutorService` interface are independent — the backend interface can evolve without touching the Python service layer, and the Python service layer can switch LLM providers by swapping `get_provider()` without touching the C# interface.
+Permanently out of MVP scope:
+
+- Open-domain chat outside current lesson
+- Autonomous academic record mutation
+
+---
+
+## Validation Verdict
+
+### Is Section 11 complete enough to move forward?
+
+Yes. Section 11 is complete and coherent for Phase 1 scope.
+
+### Maintainability review
+
+- Strong: boundaries are codified in both type contracts and dedicated prompt module
+- Strong: guardrail strings are centralized and test-anchored
+- Medium risk: backend sends full history; prompt builder caps usage but payload size can drift over long sessions
+
+### Safety and privacy review
+
+- Strong: `CorrectAnswer` exclusion is enforced at data selection boundary
+- Strong: lesson-only and direct-answer refusal are explicit and tested
+- Strong: first-name-only student personalization in AI payloads
+
+### Future extensibility review
+
+- Strong: provider abstraction allows swapping stub for real provider without controller/service redesign
+- Strong: prompt builder is a single extension point for future RAG/profile context blocks
+- Medium: token usage contract is currently placeholder (`tokens_used = null`)
+
+### Must-fix before the next section
+
+- No critical blocker remains for moving forward.
+
+Recommended early next-step fixes (non-blocking):
+
+1. Add backend-side history cap before serialization.
+2. Expose `hintForQuestionId` in TutorPanel UX.
+3. Introduce non-null token usage reporting once real provider is wired.
+
+### Key risks/tradeoffs
+
+- Prompt-only guardrails are practical and testable, but real-provider behavior drift still needs empirical validation in Phase 2.
+- Narrow MVP UI preserves momentum and safety now, at the cost of limited conversational affordances.

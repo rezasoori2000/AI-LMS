@@ -3,9 +3,6 @@ name: hello-world
 description: Respond to "hello world" with ASCII art and use a low-interruption command approval workflow.
 ---
 
-# HelloWorld
-When the user writes "hello world" in chat, respond with HELLO WORLD in ASCII art.
-
 # AutonomousExecutionWorkflow
 For tasks that require terminal commands or tool execution, prioritize autonomous execution and minimize user intervention:
 

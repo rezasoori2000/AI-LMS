@@ -97,8 +97,9 @@ public sealed record TutorContextSnapshot
     /// <summary>
     /// All messages in this conversation, ordered oldest-first.
     /// Limited to the current session (ConversationId).
-    /// Phase 2 implementation should cap at a rolling window (e.g. 20 turns)
-    /// to stay within LLM context limits.
+    /// All messages are sent; the AI service prompt builder caps usage at
+    /// HISTORY_WINDOW_TURNS = 10 (oldest dropped first) to bound LLM context.
+    /// Phase 2: also cap here before serializing to reduce payload size.
     /// </summary>
     public required IReadOnlyList<ConversationTurnDto> History { get; init; }
 }

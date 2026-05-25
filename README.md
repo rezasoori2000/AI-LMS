@@ -403,28 +403,57 @@ See [Phase 1 Section 10 Readiness Checklist](docs/development/phase1-section10-r
 
 ## Phase 1 — Section 11 Status
 
-**AI Tutor MVP Boundaries and Architecture Foundations** — Part 1 complete.
+**AI Tutor MVP** — All 5 parts complete.
 
-### Part 1 — Architecture foundations (current)
-- Defined `ITutorService` interface with explicit data ownership docs and hard boundaries.
-- Created `TutorContextSnapshot` record encoding the context assembly contract (`CorrectAnswer` absent at the type level).
-- Created `TutorBoundaryNotes.cs` — call architecture, MVP scope, data ownership, and safety constraints as co-located code comments.
-- Created `TutorController` stub under `[Authorize(Roles = "Student")]` returning HTTP 501.
-- Created `ai-service/app/models/tutor.py` Pydantic models and `api/v1/tutor.py` route stub (501).
-- Wired tutor router into `ai-service/app/api/router.py`.
-- No breaking changes; all 168 backend tests continue to pass.
+### What was built
 
-### Part 2 — Service implementation (next)
-- Implement `TutorService`: enrollment check → context assembly → AI service HTTP call → persist `AiConversation` + `AiMessage`
-- Implement `ask_tutor` in AI service: lesson-grounded system prompt + LLM `complete()` call
-- Wire `HttpClient` in backend for AI service calls
-- Add integration tests for start / ask / end lifecycle
+- [x] `ITutorService` interface with explicit data ownership rules and hard safety boundaries
+- [x] `TutorContextSnapshot` — context assembly contract with `CorrectAnswer` excluded at the type level
+- [x] `TutorBoundaryNotes.cs` — call architecture, MVP scope, data ownership, safety constraints as co-located code comments
+- [x] `TutorService` — full orchestration: enrollment check → context assembly → provider call → persist `AiConversation` + `AiMessage`
+- [x] `TutorContextAssembler` — assembles lesson, student, progress, and optional question-hint context; `CorrectAnswer` excluded at EF Core query level
+- [x] `TutorController` — 3 endpoints under `[Authorize(Roles = "Student")]`: start session (201), ask (200), end (204)
+- [x] `StubTutorProvider` — deterministic Phase 1 placeholder; swap for a real provider in Phase 2
+- [x] `TutorConversationEndedException` → 409; `StudentAccessDeniedException` → 403 (enrollment and ownership checks)
+- [x] AI service `POST /api/v1/tutor/ask` — guardrail-aware system prompt; 503 when no provider configured
+- [x] `ai-service/app/core/tutor_prompts.py` — single source of truth for system prompt construction and guardrail constants
+- [x] 5 guardrail rules in system prompt: LESSON SCOPE, NO DIRECT ANSWERS, HONEST LIMITS, CONCISE, OFF-TOPIC
+- [x] `TutorPanel` — inline lesson-help `SectionCard` in `LessonPlayerPage`; lazy session start; cleanup on unmount
+- [x] `useTutorAsk` hook — lazy session open + ask in one mutation
+- [x] 29 AI service tests (25 prompt-builder unit tests + 3 endpoint tests) — all passing
+- [x] `docs/ai-tutor-mvp.md` — consolidated architecture, scope, guardrail, and data ownership reference
 
-### Current test counts
+### Phase 1 locked decisions
+
+- Lesson-grounded only — tutor answers exclusively from the current lesson content
+- No direct answers — model is instructed to hint, never reveal; `CorrectAnswer` excluded at data layer
+- `StubTutorProvider` in Phase 1 — no live LLM calls; full chain exercised with deterministic stub
+- `TUTOR_TEMPERATURE = 0.3`, `TUTOR_MAX_RESPONSE_TOKENS = 600`, `HISTORY_WINDOW_TURNS = 10`
+- Session lifecycle: start (lazy, on first ask) → ask → end (on panel unmount or lesson change)
+- One reply displayed at a time — no threaded chat UI in Phase 1
+
+### Final test counts
+
 - Backend: **168 tests** (70 domain + 12 application + 86 API integration) — all passing
 - Frontend: **47 tests** — all passing
+- AI service: **29 tests** — all passing
+- `tsc --noEmit` clean · `dotnet build` 0 warnings
 
-See [Phase 1 Section 11 Readiness](docs/development/phase1-section11-readiness.md).
+### Phase 2 starting point (AI tutor)
+
+- Wire `HttpTutorProvider` (replace `StubTutorProvider`) and configure LLM provider
+- Add backend integration test for full start → ask → end via real `HttpTutorProvider`
+- Expose `hintForQuestionId` in `TutorPanel` UI
+- Cap `History` before serializing in `TutorContextAssembler`
+
+### Intentionally deferred
+
+- Real LLM provider, cross-session memory, RAG pipeline, streaming — Phase 2–3
+- `LearnerProfile` / `TopicMasterySnapshot` context enrichment — Phase 3
+- Teacher / parent AI summaries, recommendation engine — Phase 3+
+- Open-domain chat, autonomous academic record mutation — never
+
+See [AI Tutor MVP](docs/ai-tutor-mvp.md) and [Phase 1 Section 11 Readiness Checklist](docs/development/phase1-section11-readiness.md).
 
 ---
 

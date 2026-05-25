@@ -2,25 +2,47 @@
 AI Tutor API endpoint.
 
 POST /api/v1/tutor/ask — accepts an assembled TutorContextSnapshot + student
-message and returns an AI-generated tutor reply.
+message and returns a lesson-grounded, guardrail-bounded AI tutor reply.
 
-Status (Section 11, Part 1): Architecture stub — returns HTTP 501 until
-Section 11, Part 2 wires a real LLM provider call.
+Guardrail strategy (Section 11, Part 4)
+----------------------------------------
+All behavioral constraints live in the system prompt built by
+``app.core.tutor_prompts.build_system_prompt``.  This is a deliberate choice:
+explicit prompt-level guardrails are transparent, testable, and maintainable
+without requiring a separate moderation layer.
 
-Part 2 implementation checklist:
-  1. Import get_provider from app.providers.registry
-  2. Build a system prompt from context_snapshot (lesson-grounded, grade-appropriate)
-  3. Format conversation history as the prompt context
-  4. Call provider.complete(prompt, system_prompt=..., max_tokens=2000, temperature=0.3)
-  5. Return TutorAskResponse(reply=reply, tokens_used=...)
-  6. Add error handling: provider unavailable → HTTP 503
+Key constraints enforced by the system prompt:
+  1. LESSON SCOPE   — model must answer only from the provided lesson content
+  2. NO DIRECT ANSWERS — model must withhold correct answers even if asked
+  3. HONEST LIMITS  — model must acknowledge gaps rather than fabricate
+  4. CONCISE OUTPUT — 2–3 paragraphs, grade-appropriate language
+  5. OFF-TOPIC / INAPPROPRIATE — fixed redirect phrase; no engagement
+
+Error handling
+--------------
+  NotImplementedError  → 503  (no LLM provider is configured — expected in Phase 1)
+  Any provider error   → 503  (LLM unavailable; do not expose internal details)
+  Pydantic validation  → 422  (handled automatically by FastAPI)
+
+Phase 2: Replace ``StubTutorProvider`` in the backend with a real ``HttpTutorProvider``
+that forwards to this endpoint.  The guardrail system prompt is already in place.
 """
 from __future__ import annotations
 
+import logging
+
 from fastapi import APIRouter, HTTPException, status
 
+from app.core.tutor_prompts import (
+    TUTOR_MAX_RESPONSE_TOKENS,
+    TUTOR_TEMPERATURE,
+    build_conversation_prompt,
+    build_system_prompt,
+)
 from app.models.tutor import TutorAskPayload, TutorAskResponse
+from app.providers.registry import get_provider
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -31,24 +53,55 @@ router = APIRouter()
     description=(
         "Accepts an assembled lesson context snapshot and a student message, "
         "then returns an AI-generated tutor reply grounded in the lesson content.\n\n"
-        "**Status**: Returns HTTP 501 until Section 11, Part 2 wires the LLM provider."
+        "The system prompt applies lesson-scope guardrails, answer-withhold rules, "
+        "and off-topic redirect patterns.  See ``app.core.tutor_prompts`` for details.\n\n"
+        "Returns **503** when the LLM provider is not configured or unavailable."
     ),
     tags=["Tutor"],
 )
 async def ask_tutor(payload: TutorAskPayload) -> TutorAskResponse:
-    # TODO (Section 11, Part 2):
-    #   from app.providers.registry import get_provider
-    #   provider = get_provider()
-    #   system_prompt = _build_system_prompt(payload.context_snapshot)
-    #   prompt = _format_prompt(payload.context_snapshot, payload.student_message)
-    #   reply = await provider.complete(
-    #       prompt,
-    #       system_prompt=system_prompt,
-    #       max_tokens=2000,
-    #       temperature=0.3,
-    #   )
-    #   return TutorAskResponse(reply=reply, tokens_used=None)
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="AI tutoring is not yet available. See Section 11, Part 2.",
-    )
+    context = payload.context_snapshot
+    student_message = payload.student_message
+
+    # Build the guardrail-aware prompts.
+    system_prompt = build_system_prompt(context)
+    conversation_prompt = build_conversation_prompt(context, student_message)
+
+    # Obtain the configured LLM provider and call it.
+    try:
+        provider = get_provider()
+    except NotImplementedError:
+        # Expected in Phase 1 — no real provider is wired yet.
+        logger.info(
+            "Tutor ask rejected: no LLM provider configured "
+            "(conversation=%s, lesson=%s)",
+            context.conversation_id,
+            context.lesson_id,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="AI tutor provider is not configured.",
+        )
+
+    try:
+        reply = await provider.complete(
+            conversation_prompt,
+            system_prompt=system_prompt,
+            max_tokens=TUTOR_MAX_RESPONSE_TOKENS,
+            temperature=TUTOR_TEMPERATURE,
+        )
+    except Exception:
+        logger.exception(
+            "Tutor provider error (conversation=%s, lesson=%s)",
+            context.conversation_id,
+            context.lesson_id,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="AI tutor is temporarily unavailable. Please try again shortly.",
+        )
+
+    # tokens_used is not available from BaseLLMProvider.complete() — it returns
+    # a plain string.  Phase 2 provider implementations may add token reporting
+    # via a richer return type; set to None for now.
+    return TutorAskResponse(reply=reply, tokens_used=None)

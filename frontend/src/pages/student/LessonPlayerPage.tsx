@@ -5,6 +5,7 @@ import { PageContainer } from '@/components/layout/PageContainer'
 import { Badge, Button, SectionCard } from '@/components/ui'
 import { QuestionAnswerForm } from '@/features/student/components/QuestionAnswerForm'
 import { useCompleteStudentLesson, useStartStudentLesson, useStudentLesson } from '@/features/student/hooks/useStudent'
+import { TutorPanel } from '@/features/student/components/TutorPanel'
 
 export default function LessonPlayerPage() {
   const navigate = useNavigate()
@@ -128,6 +129,12 @@ export default function LessonPlayerPage() {
               />
             )}
           </SectionCard>
+
+          <TutorPanel
+            key={lessonId}
+            lessonId={lessonId ?? ''}
+            lessonTitle={lesson?.title ?? 'Lesson'}
+          />
 
           {completeLesson.isError && (
             <InlineFeedback

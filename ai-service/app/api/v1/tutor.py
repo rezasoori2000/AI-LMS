@@ -41,6 +41,16 @@ from app.core.tutor_prompts import (
 )
 from app.models.tutor import TutorAskPayload, TutorAskResponse
 from app.providers.registry import get_provider
+from app.services.tutor_interaction_policy import (
+    build_interaction_instruction_block,
+    build_interaction_plan,
+)
+from app.services.tutor_retrieval_context import (
+    LessonFirstRetrievalStrategy,
+    format_retrieval_context_block,
+    TutorRetrievalContextAssembler,
+)
+from app.services.retrieval_pipeline import InMemoryRetrievalArtifactRepository, LessonScopedRetriever
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -63,9 +73,39 @@ async def ask_tutor(payload: TutorAskPayload) -> TutorAskResponse:
     context = payload.context_snapshot
     student_message = payload.student_message
 
+    interaction_plan = build_interaction_plan(
+        student_message=student_message,
+        interaction_intent=payload.interaction_intent,
+        requested_depth=payload.requested_depth,
+    )
+
+    retrieval_assembler = TutorRetrievalContextAssembler(
+        strategy=LessonFirstRetrievalStrategy(
+            LessonScopedRetriever(repository=InMemoryRetrievalArtifactRepository())
+        ),
+        max_items=interaction_plan.retrieval_top_k,
+    )
+
+    retrieval_context = retrieval_assembler.assemble_context(
+        context,
+        student_message,
+        section_scope=payload.section_scope,
+        allow_curriculum_expansion=interaction_plan.allow_curriculum_expansion,
+        chapter_neighbor_lesson_ids=tuple(payload.chapter_neighbor_lesson_ids),
+        intent_hint=None,
+    )
+
     # Build the guardrail-aware prompts.
     system_prompt = build_system_prompt(context)
-    conversation_prompt = build_conversation_prompt(context, student_message)
+    interaction_block = build_interaction_instruction_block(interaction_plan)
+    retrieval_block = format_retrieval_context_block(retrieval_context)
+    conversation_prompt = "\n\n".join(
+        [
+            interaction_block,
+            retrieval_block,
+            build_conversation_prompt(context, student_message),
+        ]
+    )
 
     # Obtain the configured LLM provider and call it.
     try:
@@ -104,4 +144,10 @@ async def ask_tutor(payload: TutorAskPayload) -> TutorAskResponse:
     # tokens_used is not available from BaseLLMProvider.complete() — it returns
     # a plain string.  Phase 2 provider implementations may add token reporting
     # via a richer return type; set to None for now.
-    return TutorAskResponse(reply=reply, tokens_used=None)
+    return TutorAskResponse(
+        reply=reply,
+        tokens_used=None,
+        response_mode=interaction_plan.intent,
+        response_depth=interaction_plan.depth,
+        suggested_followups=list(interaction_plan.followup_suggestions),
+    )

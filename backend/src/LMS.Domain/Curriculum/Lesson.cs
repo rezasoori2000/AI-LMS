@@ -9,6 +9,9 @@ namespace LMS.Domain.Curriculum;
 /// - Content is stored as a plain Markdown string for Phase 1.
 ///   Phase 3 will introduce a ContentBlock table (structured JSON blocks) for rich media,
 ///   video, embedded exercises, etc. The Content column will be soft-deprecated then.
+/// - Retrieval rule (Section 12): Lesson.Content is canonical source material.
+///   Retrieval chunks/embeddings are derived artifacts and must be re-creatable from
+///   canonical lesson content (never the source of truth).
 /// - EstimatedMinutes is informational — displayed to students, not enforced.
 /// - Phase 3: add IsPublished lifecycle, VideoUrl, attachments, prerequisite lesson IDs.
 /// </summary>

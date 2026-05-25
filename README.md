@@ -457,6 +457,70 @@ See [AI Tutor MVP](docs/ai-tutor-mvp.md) and [Phase 1 Section 11 Readiness Check
 
 ---
 
+## Phase 1 — Section 12 Status
+
+**Retrieval-ready lesson architecture and internal RAG foundations** — Parts 1–5 complete.
+
+### Completed (Part 1)
+
+- [x] Reviewed lesson/content model for retrieval-readiness
+- [x] Defined canonical lesson records vs render structure vs derived retrieval artifacts
+- [x] Added internal retrieval-preparation module in AI service (`retrieval_prep.py`)
+- [x] Implemented stable section/block boundaries from lesson Markdown headings
+- [x] Implemented deterministic lesson chunk artifacts with scoped metadata and content hash
+- [x] Added unit tests for normalization, section splitting, and chunk metadata/size behavior
+- [x] Kept full compatibility with admin lesson authoring and student lesson consumption
+
+### Deferred intentionally
+
+- Embedding provider integration
+- Vector index infrastructure
+- Re-ranking and advanced retrieval tuning
+- Cross-lesson/global knowledge-base search
+- Multi-turn memory retrieval
+
+### Added in Part 2 (pipeline sketch)
+
+- [x] Lesson ingestion/indexing event model (`created`, `updated`, `unpublished`, `deleted`)
+- [x] Internal indexing orchestrator scaffold (`LessonRetrievalIndexer`)
+- [x] Retrieval boundary scaffold (`LessonScopedRetriever`)
+- [x] Embedding boundary interface (`EmbeddingProvider`) and repository boundary (`RetrievalArtifactRepository`)
+- [x] In-memory retrieval artifact repository scaffold for local validation
+- [x] Hash-based skip re-index behavior for unchanged content
+- [x] Artifact removal behavior for unpublished/deleted lessons
+- [x] Pipeline tests added in AI service test suite
+
+### Added in Part 3 (tutor retrieval-time context assembly)
+
+- [x] Tutor retrieval query DTO scaffold with intent hints
+- [x] Lesson-first retrieval strategy scaffold for tutor use
+- [x] Deterministic section-scope filtering at retrieval time
+- [x] Conservative first expansion rule: same-chapter neighboring lessons only (opt-in), no same-subject broadening
+- [x] Compact retrieval context assembly scaffold for tutor grounding
+- [x] Retrieval context formatting helper for future prompt integration
+- [x] Part 3 unit tests for query/selection/context behaviors
+
+### Added in Part 4 (teacher-like interaction refinement)
+
+- [x] Small explicit interaction intent set (`explain`, `simplify`, `give-example`, `explain-step-by-step`, `clarify-confusion`)
+- [x] Explanation depth control and intent-based response shaping rules
+- [x] Intent-aware retrieval/context shaping and suggested follow-ups
+- [x] Tutor request/response metadata fields for future UI use
+- [x] Part 4 unit tests for intent policy and model contract
+
+### Added in Part 5 (foundation validation and closeout)
+
+- [x] Reviewed the Section 12 retrieval flow end to end for architectural coherence
+- [x] Confirmed canonical lesson content stays separate from derived retrieval artifacts
+- [x] Captured the current lesson-scoped retrieval and tutor-grounding boundaries
+- [x] Documented intentionally deferred work for production RAG, multimodal runtime, and learner memory
+- [x] Added a practical readiness baseline for future tutoring sections
+- [x] Closed out Section 12 without expanding tutor capability scope
+
+See [Retrieval-Ready Lesson Architecture](docs/architecture/retrieval-ready-lesson-architecture.md), [Lesson Ingestion and Internal Indexing Pipeline](docs/architecture/lesson-ingestion-indexing-pipeline.md), [Tutor Retrieval Query and Context Assembly](docs/architecture/tutor-retrieval-context-assembly.md), [Tutor Interaction Refinement](docs/architecture/tutor-interaction-refinement.md), [Retrieval and RAG Foundations](docs/architecture/retrieval-rag-foundations.md), [Phase 1 Section 12 Part 1 Readiness](docs/development/phase1-section12-part1-readiness.md), [Phase 1 Section 12 Part 2 Readiness](docs/development/phase1-section12-part2-readiness.md), [Phase 1 Section 12 Part 3 Readiness](docs/development/phase1-section12-part3-readiness.md), [Phase 1 Section 12 Part 4 Readiness](docs/development/phase1-section12-part4-readiness.md), and [Phase 1 Section 12 Part 5 Readiness](docs/development/phase1-section12-part5-readiness.md).
+
+---
+
 ## Documentation
 
 ### Architecture
@@ -464,6 +528,11 @@ See [AI Tutor MVP](docs/ai-tutor-mvp.md) and [Phase 1 Section 11 Readiness Check
 - [Domain Model Overview](docs/architecture/domain-model-overview.md)
 - [Persistence and Migrations](docs/architecture/persistence-and-migrations.md)
 - [Personalization Readiness](docs/architecture/personalization-readiness.md)
+- [Retrieval-Ready Lesson Architecture](docs/architecture/retrieval-ready-lesson-architecture.md)
+- [Lesson Ingestion and Internal Indexing Pipeline](docs/architecture/lesson-ingestion-indexing-pipeline.md)
+- [Tutor Retrieval Query and Context Assembly](docs/architecture/tutor-retrieval-context-assembly.md)
+- [Tutor Interaction Refinement](docs/architecture/tutor-interaction-refinement.md)
+- [Retrieval and RAG Foundations](docs/architecture/retrieval-rag-foundations.md)
 
 ### Student Portal
 - [Student Portal MVP](docs/student-portal-mvp.md)
@@ -491,6 +560,10 @@ See [AI Tutor MVP](docs/ai-tutor-mvp.md) and [Phase 1 Section 11 Readiness Check
 - [Phase 1 Section 9 Readiness Checklist](docs/development/phase1-section9-readiness.md)
 - [Phase 1 Section 10 Readiness Checklist](docs/development/phase1-section10-readiness.md)
 - [Phase 1 Section 11 Readiness](docs/development/phase1-section11-readiness.md)
+- [Phase 1 Section 12 Part 1 Readiness](docs/development/phase1-section12-part1-readiness.md)
+- [Phase 1 Section 12 Part 2 Readiness](docs/development/phase1-section12-part2-readiness.md)
+- [Phase 1 Section 12 Part 3 Readiness](docs/development/phase1-section12-part3-readiness.md)
+- [Phase 1 Section 12 Part 4 Readiness](docs/development/phase1-section12-part4-readiness.md)
 
 ### Frontend
 - [Frontend UI Foundation](docs/frontend/ui-foundation.md)

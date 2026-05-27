@@ -21,10 +21,23 @@ Design decisions
 * Temperature is set low (0.3) to reduce hallucination and keep answers grounded.
 * Token budget (600) is enough for 2–4 paragraphs; prevents essay-length dumps.
 
+Prompt structure (Section 13, Part 3 — 5 blocks):
+  1. Role + scope declaration    — establishes who the model is
+  2. Lesson content block        — primary permitted knowledge source
+  3. Optional hint block         — present only when hintForQuestionId is set
+  4. Optional learner memory     — present only when learner_memory_slice is set
+                                   and has_memory=True (omitted when empty).
+                                   Block 4 uses TutorLearnerContextAssembler
+                                   (tutor_learner_context.py) to produce
+                                   relevance-filtered behavioral teaching hints.
+  5. Guardrail rules             — placed last for recency bias
+
 Phase 3 changes expected here
 ------------------------------
 * Add RAG-retrieved excerpts as an additional context block (above lesson_content).
-* Add a learner-profile awareness block (preferred explanation style, grade history).
+* Add teacher-guide block (how-to-teach source) when teaching_guide_available=True.
+  Teacher guide block: above learner memory, below lesson content.
+  Order: role → lesson_content → [teacher_guide] → [hint] → [learner_memory] → guardrails
 * Switch provider.complete() to a messages-array call once BaseLLMProvider gains
   a chat() method — enables proper multi-turn conversation handling.
 * Introduce content-length guard: truncate lesson_content when it exceeds a
@@ -33,6 +46,11 @@ Phase 3 changes expected here
 from __future__ import annotations
 
 from app.models.tutor import TutorContextSnapshot
+from app.services.tutor_learner_context import (
+    assemble_tutor_learner_context,
+    extract_topic_terms,
+    format_personalization_hints_block,
+)
 
 # ── Generation constants ──────────────────────────────────────────────────────
 
@@ -120,7 +138,23 @@ def build_system_prompt(context: TutorContextSnapshot) -> str:
     if context.hint_for_question_id and context.question_text:
         parts.append(_build_hint_block(context))
 
-    # ── 4. Guardrail rules (last — recency bias) ──────────────────────────────
+    # ── 4. Optional learner memory block (Section 13, Part 3) ─────────────────
+    # Assembled via TutorLearnerContextAssembler: relevance-filtered and
+    # translated into behavioral teaching hints.
+    # Absent when backend sends None or learner has no stored memory signals.
+    if context.learner_memory_slice is not None:
+        _terms = extract_topic_terms(context.lesson_title)
+        _bpi = assemble_tutor_learner_context(
+            learner_ctx=context.learner_memory_slice,
+            lesson_id=context.lesson_id,
+            subject_name=context.subject_name,
+            topic_terms=_terms,
+        )
+        memory_block = format_personalization_hints_block(_bpi)
+        if memory_block:
+            parts.append(memory_block)
+
+    # ── 5. Guardrail rules (last — recency bias) ──────────────────────────────
     parts.append(_build_guardrail_rules(grade, lesson))
 
     return "\n\n".join(parts)

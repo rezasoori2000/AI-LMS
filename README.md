@@ -521,6 +521,80 @@ See [Retrieval-Ready Lesson Architecture](docs/architecture/retrieval-ready-less
 
 ---
 
+## Phase 1 — Section 13: Persistent Learner Model ✅
+
+**All 5 parts complete.** Section 13 builds the bounded, privacy-aware, explainable learner-memory foundation for the AI tutor. Students are minors (or may be minors) — all design decisions apply the minimum-data principle strictly.
+
+### Part 1 — Model boundaries and memory architecture foundations
+- [x] `LearnerMemorySlice` — bounded aggregate keyed by (user_id, tenant_id); 3-layer model (explicit preferences / derived academic signals / short-lived friction)
+- [x] `WeakTopicRecord` and `MisconceptionRecord` — threshold-gated (≥ 2 independent observations); never inferred from a single interaction
+- [x] `ExplanationStyleSignal` — explicit or inferred-from-repeated-request only; no passive behavioral inference
+- [x] `PaceSignalRecord` — explicit-only; never inferred from speed telemetry
+- [x] `FrictionSignal` — short-lived, session-adjacent; excluded from tutor prompt context
+- [x] `LearnerMemoryService` — sole writer; update-boundary rule engine with session-local pending accumulator
+- [x] `InMemoryLearnerMemoryStore` — Phase 1 replaceable store; `LearnerMemoryStore` ABC defined for Phase 3 DB migration
+- [x] `TutorFacingLearnerContext` — bounded read-only projection (≤ 3 weak topics, ≤ 2 misconceptions, style, pace); friction excluded
+- [x] `LearnerMemoryBoundaryNotes.cs` — C# canonical-record isolation contract and Phase 3 migration path
+- [x] 46 new AI service tests; all rule boundaries, formatter, prompt integration, and isolation contract
+
+### Part 2 — Categories, update rules, evidence and confidence policy
+- [x] `LearnerMemoryCategory` enum — 5 explicit categories; no category sprawl; adding one requires explicit decision record
+- [x] `EvidenceSource` enum — 7 recognised evidence types; prevents arbitrary string tags
+- [x] `ConfidenceLevel` enum — LOW / MEDIUM / HIGH; derived from evidence count, never stored separately
+- [x] `CategoryPolicy` frozen dataclass — declarative, immutable per-category rules (min evidence, max stored, decay days, valid sources, prompt safety flag)
+- [x] `MemoryRetentionTier` enum — EPHEMERAL / SHORT_TERM / MEDIUM_TERM / EXPLICIT_PREFERENCE; annotates all 5 `CategoryPolicy` entries
+- [x] Stale filtering in `get_tutor_facing_context()` — soft decay (excluded from context, not deleted)
+- [x] Recovery observations — `SuccessfulRecoveryObservation` and `MisconceptionResolutionObservation` as positive counter-signals
+- [x] 52 policy tests + 15 new groups J/K/L; all passing
+
+### Part 3 — Tutor-facing context assembly and bounded personalization input
+- [x] `BoundedPersonalizationInput` — authoritative boundary between stored memory and tutor behavior; immutable frozen dataclass
+- [x] `PersonalizationHint` — confidence-aware, relevance-flagged, hedged-language behavioral instruction
+- [x] `TutorLearnerContextAssembler` — relevance-sorted, capped at `MAX_PERSONALIZATION_HINTS=4`; `MAX_TOPIC_HINTS=2`
+- [x] `extract_topic_terms()` + `is_lesson_relevant()` — keyword overlap relevance helpers (Phase 3: embedding similarity)
+- [x] `format_personalization_hints_block()` — formats `BoundedPersonalizationInput` as prompt block; backwards-compatible headers
+- [x] `build_system_prompt` updated to use assembler in block 4; topic hints relevance-sorted, not hard-excluded
+- [x] 69 assembler tests across 9 groups (A–I); all passing
+
+### Part 4 — Safety, privacy, reset and deletion
+- [x] `LearnerMemoryResetScope` enum — SESSION_PENDING / TOPIC_SIGNALS / PREFERENCES / FRICTION / ALL
+- [x] `GuardrailViolation` frozen dataclass — field, reason, truncated rejected value
+- [x] `LearnerMemoryGuardrailError` — raised before any state change (atomicity guarantee)
+- [x] 4 forbidden pattern groups compiled to word-boundary regex: diagnostic labels, psychological claims, ability ranking, engagement manipulation
+- [x] `LearnerMemorySafetyGuard.validate_update_observations()` — validates all text before touching state
+- [x] `reset_memory(scope)` — soft reset; pending cleared unconditionally (before slice existence check)
+- [x] `delete_user_memory()` — hard delete; removes slice from store + clears pending
+- [x] 79 safety and lifecycle tests across 13 groups (A–M); all passing
+
+### Part 5 — Validation and closeout
+- [x] Full Section 13 design review — naming, coupling, safety, and Phase 3 readiness
+- [x] `docs/architecture/tutor-learner-context.md` — new architecture reference for assembly and safety layers
+- [x] `docs/development/phase1-section13-part5-readiness.md` — closeout checklist with readiness for next sections
+
+### Phase 1 locked decisions
+- Friction signals permanently excluded from tutor context (by design, not omission)
+- `LearnerMemoryService` is sole writer — nothing else may write to the learner memory store
+- Guardrails run at service-layer code level, independent of prompt wording (prompts are defence-in-depth only)
+- `reset_memory(ALL)` = soft reset (slice record preserved); `delete_user_memory()` = hard delete (slice removed)
+- `InMemoryLearnerMemoryStore` pending observations are session-local, not persisted — documented Phase 3 migration path
+
+### Final test counts
+- AI service: **312 tests** — all passing
+- Backend: **168 tests** — all passing
+- Frontend: **47 tests** — all passing
+
+### Intentionally deferred to Phase 3
+- PostgreSQL-backed `LearnerMemoryStore` and persistent pending observations table
+- Parent-facing reset/delete API endpoint and audit log
+- Scheduled hard-deletion job by `MemoryRetentionTier`
+- Semantic (embedding-based) relevance filtering for topic hints
+- HTTP-layer guardrail validation
+- Subject-level filtering by `subject_id` UUID
+
+See [Learner Memory Architecture Foundations](docs/architecture/learner-memory-foundations.md), [Tutor-Facing Learner Context Assembly and Safety](docs/architecture/tutor-learner-context.md), and [Phase 1 Section 13 Part 5 Readiness](docs/development/phase1-section13-part5-readiness.md).
+
+---
+
 ## Documentation
 
 ### Architecture
@@ -533,6 +607,8 @@ See [Retrieval-Ready Lesson Architecture](docs/architecture/retrieval-ready-less
 - [Tutor Retrieval Query and Context Assembly](docs/architecture/tutor-retrieval-context-assembly.md)
 - [Tutor Interaction Refinement](docs/architecture/tutor-interaction-refinement.md)
 - [Retrieval and RAG Foundations](docs/architecture/retrieval-rag-foundations.md)
+- [Learner Memory Architecture Foundations](docs/architecture/learner-memory-foundations.md)
+- [Tutor-Facing Learner Context Assembly and Safety](docs/architecture/tutor-learner-context.md)
 
 ### Student Portal
 - [Student Portal MVP](docs/student-portal-mvp.md)
@@ -564,6 +640,8 @@ See [Retrieval-Ready Lesson Architecture](docs/architecture/retrieval-ready-less
 - [Phase 1 Section 12 Part 2 Readiness](docs/development/phase1-section12-part2-readiness.md)
 - [Phase 1 Section 12 Part 3 Readiness](docs/development/phase1-section12-part3-readiness.md)
 - [Phase 1 Section 12 Part 4 Readiness](docs/development/phase1-section12-part4-readiness.md)
+- [Phase 1 Section 13 Part 1 Readiness](docs/development/phase1-section13-part1-readiness.md)
+- [Phase 1 Section 13 Part 5 Readiness (Closeout)](docs/development/phase1-section13-part5-readiness.md)
 
 ### Frontend
 - [Frontend UI Foundation](docs/frontend/ui-foundation.md)
